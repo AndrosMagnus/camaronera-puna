@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Isla Puná – 3D Terrain Map | Camaronera Puna</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#0a0a1a; font-family:'Segoe UI',sans-serif; overflow:hidden; }
+  #canvas { width:100vw; height:100vh; display:block; }
+  #ui {
+    position:fixed; top:16px; left:16px; background:rgba(10,10,30,0.88);
+    border:1px solid rgba(100,160,255,0.3); border-radius:12px;
+    padding:16px 20px; color:#e0e8ff; min-width:220px;
+    backdrop-filter:blur(8px); z-index:100;
+  }
+  #ui h2 { font-size:14px; color:#7eb8ff; letter-spacing:1px; text-transform:uppercase; margin-bottom:4px; }
+  #ui h3 { font-size:11px; color:#8899bb; margin-bottom:12px; font-weight:normal; }
+  .stat { display:flex; justify-content:space-between; margin:4px 0; font-size:12px; }
+  .stat span { color:#aaccff; font-weight:600; }
+  .divider { border:none; border-top:1px solid rgba(100,160,255,0.2); margin:10px 0; }
+  .legend { margin-top:10px; }
+  .legend-title { font-size:11px; color:#8899bb; margin-bottom:6px; }
+  .legend-bar {
+    width:100%; height:16px; border-radius:4px;
+    background: linear-gradient(to right, #440154, #3b528b, #21908c, #5ec962, #fde725, #ff8c00, #ffffff);
+  }
+  .legend-labels { display:flex; justify-content:space-between; font-size:10px; color:#8899bb; margin-top:3px; }
+  #controls {
+    position:fixed; top:16px; right:16px; background:rgba(10,10,30,0.88);
+    border:1px solid rgba(100,160,255,0.3); border-radius:12px;
+    padding:14px 18px; color:#e0e8ff; backdrop-filter:blur(8px); z-index:100;
+  }
+  #controls h3 { font-size:11px; color:#8899bb; margin-bottom:10px; text-transform:uppercase; }
+  .ctrl { display:flex; align-items:center; justify-content:space-between; margin:8px 0; font-size:12px; gap:12px; }
+  input[type=range] { width:100px; accent-color:#7eb8ff; }
+  #elevation-tooltip {
+    position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
+    background:rgba(10,10,30,0.9); border:1px solid rgba(100,160,255,0.4);
+    border-radius:8px; padding:8px 16px; color:#aaccff; font-size:13px;
+    pointer-events:none; display:none;
+  }
+  #instructions {
+    position:fixed; bottom:20px; right:16px;
+    background:rgba(10,10,30,0.7); border-radius:8px;
+    padding:8px 14px; color:#667799; font-size:11px; line-height:1.8;
+  }
+</style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+
+<div id="ui">
+  <h2>🏔 Isla Puná – 3D Terrain</h2>
+  <h3>Copernicus DEM GLO-30 · 30m resolution</h3>
+  <hr class="divider">
+  <div class="stat">Min Elevation <span>0 m</span></div>
+  <div class="stat">Max Elevation <span>270 m</span></div>
+  <div class="stat">Mean Elevation <span>23 m</span></div>
+  <div class="stat">Resolution <span>30 m/px</span></div>
+  <div class="stat">Source <span>Copernicus 2024</span></div>
+  <hr class="divider">
+  <div class="legend">
+    <div class="legend-title">Elevation (m)</div>
+    <div class="legend-bar"></div>
+    <div class="legend-labels"><span>0</span><span>50</span><span>100</span><span>150</span><span>200</span><span>270</span></div>
+  </div>
+</div>
+
+<div id="controls">
+  <h3>⚙ Display Controls</h3>
+  <div class="ctrl">Vertical Scale <input type="range" id="vScale" min="1" max="20" value="5" step="0.5"></div>
+  <div class="ctrl">Light Angle <input type="range" id="lightAngle" min="0" max="360" value="315"></div>
+  <div class="ctrl">Opacity <input type="range" id="opacity" min="0.3" max="1" value="1" step="0.05"></div>
+  <div class="ctrl" style="margin-top:10px;">
+    <label><input type="checkbox" id="showContours" checked> Contours</label>
+    <label><input type="checkbox" id="showWireframe"> Wireframe</label>
+  </div>
+</div>
+
+<div id="elevation-tooltip"></div>
+<div id="instructions">🖱 Drag to rotate · Scroll to zoom · Right-drag to pan</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const BBOX = {w:-80.2332,s:-2.9819,e:-80.0587,n:-2.8328};
+const ZONA_ALTA = [
+  [593629,9679674],[593674,9679662],[593749,9679683],[593837,9679669],
+  [593897,9679672],[593965,9679620],[593968,9679609],[593901,9679552],
+  [593899,9679394],[593861,9679343],[593848,9679322],[593834,9679322],
+  [593813,9679327],[593790,9679354],[593767,9679394],[593763,9679471],
+  [593778,9679498],[593794,9679513],[593823,9679528],[593851,9679538],
+  [593877,9679541],[593929,9679409],[593982,9679422],[594018,9679441],
+  [594022,9679429],[594005,9679328],[594024,9679291],[594036,9679287],
+  [594043,9679218],[594050,9679188],[594057,9679186],[594069,9679191],
+  [594083,9679210],[594103,9679234],[594667,9678629],[594695,9678482],
+  [594775,9678256],[594956,9677943],[594977,9677800],[594871,9677569],
+  [594835,9677433],[594855,9677365],[594746,9677253],[594778,9677174],
+  [594768,9677103],[594785,9676974],[594547,9677203],[594356,9677200],
+  [594243,9677260],[594277,9677638],[594169,9677755],[594124,9677836],
+  [593937,9677931],[593564,9678879],[593513,9679102],[593555,9679320],
+  [593580,9679572]
+];
+
+// UTM to normalized 0-1 coords
+const UTM_W = 588000, UTM_E = 602000, UTM_S = 9675000, UTM_N = 9681500;
+function utmToNorm(x, y) {
+  return [(x - UTM_W)/(UTM_E - UTM_W), (y - UTM_S)/(UTM_N - UTM_S)];
+}
+
+// Scene setup
+const canvas = document.getElementById('canvas');
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true});
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(window.devicePixelRatio);
+renderer.shadowMap.enabled = true;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0a0a1a);
+scene.fog = new THREE.FogExp2(0x0a0a1a, 0.002);
+
+const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 2000);
+camera.position.set(0, 80, 120);
+camera.lookAt(0, 0, 0);
+
+// Lights
+const ambient = new THREE.AmbientLight(0x334466, 0.8);
+scene.add(ambient);
+const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+dirLight.position.set(-50, 100, 50);
+dirLight.castShadow = true;
+scene.add(dirLight);
+
+// Elevation colormap (viridis-like)
+function elevColor(t) {
+  const colors = [
+    [68,1,84],[59,82,139],[33,145,140],[94,201,98],[253,231,37],[255,140,0],[255,255,255]
+  ];
+  t = Math.max(0, Math.min(1, t));
+  const i = t * (colors.length - 1);
+  const lo = Math.floor(i), hi = Math.ceil(i);
+  const f = i - lo;
+  const c0 = colors[lo], c1 = colors[hi];
+  return new THREE.Color(
+    (c0[0]+(c1[0]-c0[0])*f)/255,
+    (c0[1]+(c1[1]-c0[1])*f)/255,
+    (c0[2]+(c1[2]-c0[2])*f)/255
+  );
+}
+
+let terrainMesh, wireframeMesh;
+const terrainGroup = new THREE.Group();
+scene.add(terrainGroup);
+
+fetch('dem_data.json').then(r=>r.json()).then(dem => {
+  const {data, rows, cols, min, max} = dem;
+  const W = 200, H = Math.round(200 * rows/cols);
+  const geo = new THREE.PlaneGeometry(W, H, cols-1, rows-1);
+  geo.rotateX(-Math.PI/2);
+
+  const posArr = geo.attributes.position.array;
+  const colors = [];
+  let vScale = 5;
+
+  function buildTerrain(vs) {
+    for (let r=0; r<rows; r++) {
+      for (let c=0; c<cols; c++) {
+        const idx = r*cols+c;
+        const elev = data[r][c];
+        const t = (elev-min)/(max-min);
+        const vIdx = (r*cols+c)*3;
+        posArr[vIdx+1] = elev/max * vs * 20;
+        const col = elevColor(t);
+        colors.push(col.r, col.g, col.b);
+      }
+    }
+    geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+    geo.attributes.position.needsUpdate = true;
+    geo.computeVertexNormals();
+  }
+  buildTerrain(5);
+
+  const mat = new THREE.MeshPhongMaterial({
+    vertexColors: true, shininess: 20,
+    side: THREE.FrontSide
+  });
+  terrainMesh = new THREE.Mesh(geo, mat);
+  terrainMesh.receiveShadow = true;
+  terrainGroup.add(terrainMesh);
+
+  // Wireframe overlay
+  const wireMat = new THREE.MeshBasicMaterial({color:0x334466, wireframe:true, opacity:0.15, transparent:true});
+  wireframeMesh = new THREE.Mesh(geo.clone(), wireMat);
+  wireframeMesh.visible = false;
+  terrainGroup.add(wireframeMesh);
+
+  // Add Zona Alta polygon outline
+  const shape = new THREE.BufferGeometry();
+  const pts3d = [];
+  ZONA_ALTA.forEach(([utmX, utmY]) => {
+    const [nx, ny] = utmToNorm(utmX, utmY);
+    const px = (nx - 0.5) * W;
+    const pz = -(ny - 0.5) * H;
+    // Sample elevation at this position
+    const ci = Math.round(nx * (cols-1));
+    const ri = Math.round((1-ny) * (rows-1));
+    const elev = (ri>=0&&ri<rows&&ci>=0&&ci<cols) ? data[ri][ci] : 10;
+    const py = elev/max * 5 * 20 + 2;
+    pts3d.push(px, py, pz);
+  });
+  // close polygon
+  pts3d.push(pts3d[0], pts3d[1], pts3d[2]);
+  shape.setAttribute('position', new THREE.Float32BufferAttribute(pts3d, 3));
+  const lineMat = new THREE.LineBasicMaterial({color:0x00ff88, linewidth:3});
+  const line = new THREE.Line(shape, lineMat);
+  terrainGroup.add(line);
+
+  // Label
+  // Vertical exaggeration control
+  document.getElementById('vScale').addEventListener('input', e => {
+    const vs = parseFloat(e.target.value);
+    const pos = geo.attributes.position.array;
+    for (let r=0; r<rows; r++)
+      for (let c=0; c<cols; c++) {
+        const vIdx = (r*cols+c)*3;
+        const elev = data[r][c];
+        pos[vIdx+1] = elev/max * vs * 20;
+      }
+    geo.attributes.position.needsUpdate = true;
+    geo.computeVertexNormals();
+  });
+
+  document.getElementById('showWireframe').addEventListener('change', e => {
+    wireframeMesh.visible = e.target.checked;
+  });
+
+  document.getElementById('opacity').addEventListener('input', e => {
+    terrainMesh.material.opacity = parseFloat(e.target.value);
+    terrainMesh.material.transparent = parseFloat(e.target.value) < 1;
+  });
+
+  document.getElementById('lightAngle').addEventListener('input', e => {
+    const a = parseFloat(e.target.value) * Math.PI/180;
+    dirLight.position.set(Math.cos(a)*80, 100, Math.sin(a)*80);
+  });
+});
+
+// Orbit controls (manual implementation)
+let isDragging=false, isRightDrag=false;
+let prevX=0, prevY=0;
+let rotX=0.4, rotY=0;
+let panX=0, panY=0;
+let zoom=1;
+
+canvas.addEventListener('mousedown', e => {
+  isDragging=true; isRightDrag=(e.button===2);
+  prevX=e.clientX; prevY=e.clientY;
+});
+canvas.addEventListener('contextmenu', e=>e.preventDefault());
+canvas.addEventListener('mousemove', e => {
+  if (!isDragging) return;
+  const dx=(e.clientX-prevX)*0.005, dy=(e.clientY-prevY)*0.005;
+  if (isRightDrag) { panX+=dx*50; panY-=dy*50; }
+  else { rotY+=dx; rotX+=dy; rotX=Math.max(-0.1,Math.min(1.2,rotX)); }
+  prevX=e.clientX; prevY=e.clientY;
+});
+canvas.addEventListener('mouseup', ()=>isDragging=false);
+canvas.addEventListener('wheel', e=>{ zoom*=(e.deltaY>0?1.1:0.9); zoom=Math.max(0.2,Math.min(5,zoom)); });
+
+function animate() {
+  requestAnimationFrame(animate);
+  const r = 150*zoom;
+  camera.position.set(
+    Math.sin(rotY)*Math.cos(rotX)*r + panX,
+    Math.sin(rotX)*r + 10,
+    Math.cos(rotY)*Math.cos(rotX)*r + panY
+  );
+  camera.lookAt(panX, 0, panY);
+  renderer.render(scene, camera);
+}
+animate();
+
+window.addEventListener('resize', ()=>{
+  camera.aspect=window.innerWidth/window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+</script>
+</body>
+</html>
