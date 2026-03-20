@@ -70,7 +70,7 @@ input[type=range]{width:88px;accent-color:#7eb8ff}
     <label class="bo sel"><input type="radio" name="bm" value="osm" checked onchange="SBM('osm')"> OpenStreetMap</label>
     <label class="bo"><input type="radio" name="bm" value="sat" onchange="SBM('sat')"> Satellite (ESRI)</label>
     <label class="bo"><input type="radio" name="bm" value="none" onchange="SBM('none')"> None</label>
-    <div class="row" style="margin-top:8px">Overlay Opacity <div style="display:flex;align-items:center;gap:4px"><input type="range" id="ov2dOp" min="0" max="1" value="0.9" step="0.05" oninput="S2O(this.value)"><span id="ov2dOpVal" style="font-size:10px;color:#7eb8ff;min-width:28px">90%</span></div></div>
+    <div class="row" style="margin-top:8px">Overlay Opacity <div style="display:flex;align-items:center;gap:4px"><input type="range" id="ov2dOp" min="0" max="1" value="1" step="0.05" oninput="S2O(this.value)"><span id="ov2dOpVal" style="font-size:10px;color:#7eb8ff;min-width:28px">100%</span></div></div>
   </div>
   <div class="sec"><div class="st">Overlay Layers</div>
     <button class="lb on" data-k="dem" onclick="SL('dem',this)"><span class="ld" style="background:linear-gradient(90deg,#440154,#21908c,#fde725)"></span>DEM – Elevation</button>
@@ -79,6 +79,7 @@ input[type=range]{width:88px;accent-color:#7eb8ff}
     <button class="lb" data-k="mndwi" onclick="SL('mndwi',this)"><span class="ld" style="background:linear-gradient(90deg,#D73027,#FFFFBF,#2166AC)"></span>MNDWI – Turbid Water</button>
     <button class="lb" data-k="ndti" onclick="SL('ndti',this)"><span class="ld" style="background:linear-gradient(90deg,#2C7BB6,#FFFFBF,#A6611A)"></span>NDTI – Turbidity</button>
     <button class="lb" data-k="hillshade" onclick="SL('hillshade',this)"><span class="ld" style="background:linear-gradient(90deg,#111,#888,#fff)"></span>Hillshade</button>
+    <button class="lb" data-k="falsecolor" onclick="SL('falsecolor',this)"><span class="ld" style="background:linear-gradient(90deg,#003,#f00,#ff0,#0f0)"></span>False Color NIR</button>
   </div>
   <div class="sec"><div class="st">Vectors</div>
     <label class="row">Zona Alta <label class="sw"><input type="checkbox" id="tZA" checked onchange="TZA(this.checked)"><span class="sl"></span></label></label>
@@ -105,7 +106,8 @@ input[type=range]{width:88px;accent-color:#7eb8ff}
 <div id="tip"></div>
 
 <script>
-var LINFO={dem:{f:"layer_dem.png",n:"DEM – Elevation",g:"linear-gradient(90deg,#440154,#21908c,#fde725,#ff8c00,#fff)",mn:"0 m",mx:"270 m"},ndvi:{f:"layer_ndvi.png",n:"NDVI – Vegetation",g:"linear-gradient(90deg,#D7191C,#FFFFBF,#1A9641)",mn:"-0.4",mx:"0.9"},ndwi:{f:"layer_ndwi.png",n:"NDWI – Water",g:"linear-gradient(90deg,#D73027,#FFFFBF,#2166AC)",mn:"-0.85",mx:"0.56"},mndwi:{f:"layer_mndwi.png",n:"MNDWI – Turbid Water",g:"linear-gradient(90deg,#D73027,#FFFFBF,#2166AC)",mn:"-0.72",mx:"0.63"},ndti:{f:"layer_ndti.png",n:"NDTI – Turbidity",g:"linear-gradient(90deg,#2C7BB6,#FFFFBF,#A6611A)",mn:"-0.45",mx:"0.21"},hillshade:{f:"layer_hillshade.png",n:"Hillshade",g:"linear-gradient(90deg,#000,#888,#fff)",mn:"0",mx:"255"}};
+var LINFO={dem:{f:"layer_dem.png",n:"DEM – Elevation",g:"linear-gradient(90deg,#440154,#21908c,#fde725,#ff8c00,#fff)",mn:"0 m",mx:"270 m"},ndvi:{f:"layer_ndvi.png",n:"NDVI – Vegetation",g:"linear-gradient(90deg,#D7191C,#FFFFBF,#1A9641)",mn:"-0.4",mx:"0.9"},ndwi:{f:"layer_ndwi.png",n:"NDWI – Water",g:"linear-gradient(90deg,#D73027,#FFFFBF,#2166AC)",mn:"-0.85",mx:"0.56"},mndwi:{f:"layer_mndwi.png",n:"MNDWI – Turbid Water",g:"linear-gradient(90deg,#D73027,#FFFFBF,#2166AC)",mn:"-0.72",mx:"0.63"},ndti:{f:"layer_ndti.png",n:"NDTI – Turbidity",g:"linear-gradient(90deg,#2C7BB6,#FFFFBF,#A6611A)",mn:"-0.45",mx:"0.21"},hillshade:{f:"layer_hillshade.png",n:"Hillshade",g:"linear-gradient(90deg,#000,#888,#fff)",mn:"0",mx:"255"},
+falsecolor:{f:"layer_falsecolor.png",n:"False Color NIR",g:"linear-gradient(90deg,#003,#f00,#ff0,#0f0)",mn:"B8-B4-B3",mx:"NIR"}};
 var CM={dem:[[68,1,84],[59,82,139],[33,145,140],[94,201,98],[253,231,37],[255,140,0],[255,255,255]],ndvi:[[215,25,28],[255,255,145],[26,150,65]],ndwi:[[215,48,39],[255,255,191],[33,102,172]],mndwi:[[215,48,39],[255,255,191],[33,102,172]],ndti:[[44,123,182],[255,255,191],[166,97,26]],hillshade:[[0,0,0],[128,128,128],[255,255,255]]};
 var UN={dem:"m",ndvi:"",ndwi:"",mndwi:"",ndti:"",hillshade:""};
 var ZA_U=[[593629,9679674],[593674,9679662],[593749,9679683],[593837,9679669],[593897,9679672],[593965,9679620],[593968,9679609],[593901,9679552],[593899,9679394],[593861,9679343],[593848,9679322],[593834,9679322],[593813,9679327],[593790,9679354],[593767,9679394],[593763,9679471],[593778,9679498],[593794,9679513],[593823,9679528],[593851,9679538],[593877,9679541],[593929,9679409],[593982,9679422],[594018,9679441],[594022,9679429],[594005,9679328],[594024,9679291],[594036,9679287],[594043,9679218],[594050,9679188],[594057,9679186],[594069,9679191],[594083,9679210],[594103,9679234],[594667,9678629],[594695,9678482],[594775,9678256],[594956,9677943],[594977,9677800],[594871,9677569],[594835,9677433],[594855,9677365],[594746,9677253],[594778,9677174],[594768,9677103],[594785,9676974],[594547,9677203],[594356,9677200],[594243,9677260],[594277,9677638],[594169,9677755],[594124,9677836],[593937,9677931],[593564,9678879],[593513,9679102],[593555,9679320],[593580,9679572]];
@@ -208,7 +210,7 @@ function OL(){
   LSAT=L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",{attribution:"© Esri",maxZoom:19});
   if(BM==="osm")LOSM.addTo(LM);else if(BM==="sat")LSAT.addTo(LM);
   var SW=u2l(UW,US),NE=u2l(UE,UN2);
-  LO=L.imageOverlay(LINFO[CK].f,[SW,NE],{opacity:parseFloat(document.getElementById('ov2dOp').value||0.9),interactive:false}).addTo(LM);
+  LO=L.imageOverlay(LINFO[CK].f,[SW,NE],{opacity:parseFloat(document.getElementById('ov2dOp').value)||1.0,interactive:false}).addTo(LM);
   LZA=L.polygon(ZA_L,{color:"#00ff88",weight:2.5,fillOpacity:.1,fillColor:"#00ff88"}).bindPopup("<b>Zona Alta</b><br>183.86 ha");
   if(document.getElementById("tZA").checked)LZA.addTo(LM);
   if(CD&&document.getElementById("tCT").checked)BCT2();
@@ -225,7 +227,7 @@ function OL(){
     var ri=Math.round((1-ny)*(dem.rows-1));
     if(ci<0||ci>=dem.cols||ri<0||ri>=dem.rows){tip.classList.remove('show');return;}
     var elev=Math.max(0,dem.data[ri][ci]).toFixed(1);
-    var ld=window.AL[window.CK];
+    var ld=(window.CK!=='falsecolor')?window.AL[window.CK]:null;
     var layVal='';
     if(ld&&ri<ld.rows&&ci<ld.cols){
       layVal=' | '+window.LINFO[window.CK].n.split(' – ')[0]+': '+ld.data[ri][ci].toFixed(3)+window.UN[window.CK];
@@ -241,8 +243,8 @@ function BCT2(){
   LCT=L.geoJSON({type:"FeatureCollection",features:CD.features.map(function(f){return{type:"Feature",geometry:{type:"LineString",coordinates:f.pts.map(function(p){var ll=u2l(p[0],p[1]);return[ll[1],ll[0]];})},properties:{e:f.e}};})},{style:function(f){return{color:f.properties.e>100?"#cc8800":"#886633",weight:.8,opacity:.55};}}).addTo(LM);
 }
 function SV(v){CV=v;document.getElementById("v3").style.display=v==="3d"?"block":"none";document.getElementById("v2").style.display=v==="2d"?"block":"none";document.getElementById("nav").style.display=v==="3d"?"flex":"none";document.getElementById("s3d").style.display=v==="3d"?"block":"none";document.getElementById("b3d").classList.toggle("on",v==="3d");document.getElementById("b2d").classList.toggle("on",v==="2d");if(v==="2d")OL();}
-function SL(k,btn){CK=k;document.querySelectorAll(".lb").forEach(function(b){b.classList.remove("on");});btn.classList.add("on");BT(k,parseFloat(document.getElementById("vs").value));if(CV==="2d"&&LM&&LO){var SW=u2l(UW,US),NE=u2l(UE,UN2);LM.removeLayer(LO);LO=L.imageOverlay(LINFO[k].f,[SW,NE],{opacity:parseFloat(document.getElementById('ov2dOp').value||0.9),interactive:false}).addTo(LM);}}
-function S2O(v){document.getElementById("ov2dOpVal").textContent=Math.round(v*100)+"%";if(window.LO)window.LO.setOpacity(parseFloat(v));}
+function SL(k,btn){CK=k;document.querySelectorAll(".lb").forEach(function(b){b.classList.remove("on");});btn.classList.add("on");BT(k,parseFloat(document.getElementById("vs").value));if(CV==="2d"&&LM&&LO){var SW=u2l(UW,US),NE=u2l(UE,UN2);LM.removeLayer(LO);LO=L.imageOverlay(LINFO[k].f,[SW,NE],{opacity:parseFloat(document.getElementById('ov2dOp').value)||1.0,interactive:false}).addTo(LM);}}
+function S2O(v){var pct=Math.round(parseFloat(v)*100);document.getElementById("ov2dOpVal").textContent=pct+"%";if(window.LO)window.LO.setOpacity(parseFloat(v));}
 function SBM(v){BM=v;document.querySelectorAll(".bo").forEach(function(el){el.classList.toggle("sel",el.querySelector("input").value===v);});if(!LM)return;if(LOSM&&LM.hasLayer(LOSM))LM.removeLayer(LOSM);if(LSAT&&LM.hasLayer(LSAT))LM.removeLayer(LSAT);if(v==="osm")LOSM.addTo(LM);else if(v==="sat")LSAT.addTo(LM);}
 function TZA(on){if(ZL)ZL.visible=on;if(LM&&LZA){if(on)LZA.addTo(LM);else LM.removeLayer(LZA);}}
 function TCT(on){CTL.forEach(function(l){l.visible=on;});if(CV==="2d"&&LM){if(on)BCT2();else if(LCT)LM.removeLayer(LCT);}}
