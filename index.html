@@ -70,6 +70,7 @@ input[type=range]{width:88px;accent-color:#7eb8ff}
     <label class="bo sel"><input type="radio" name="bm" value="osm" checked onchange="SBM('osm')"> OpenStreetMap</label>
     <label class="bo"><input type="radio" name="bm" value="sat" onchange="SBM('sat')"> Satellite (ESRI)</label>
     <label class="bo"><input type="radio" name="bm" value="none" onchange="SBM('none')"> None</label>
+    <div class="row" style="margin-top:8px">Overlay Opacity <div style="display:flex;align-items:center;gap:4px"><input type="range" id="ov2dOp" min="0" max="1" value="0.75" step="0.05" oninput="S2O(this.value)"><span id="ov2dOpVal" style="font-size:10px;color:#7eb8ff;min-width:28px">75%</span></div></div>
   </div>
   <div class="sec"><div class="st">Overlay Layers</div>
     <button class="lb on" data-k="dem" onclick="SL('dem',this)"><span class="ld" style="background:linear-gradient(90deg,#440154,#21908c,#fde725)"></span>DEM – Elevation</button>
@@ -205,7 +206,7 @@ function OL(){
   LSAT=L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",{attribution:"© Esri",maxZoom:19});
   if(BM==="osm")LOSM.addTo(LM);else if(BM==="sat")LSAT.addTo(LM);
   var SW=u2l(UW,US),NE=u2l(UE,UN2);
-  LO=L.imageOverlay(LINFO[CK].f,[SW,NE],{opacity:.75,interactive:false}).addTo(LM);
+  LO=L.imageOverlay(LINFO[CK].f,[SW,NE],{opacity:parseFloat(document.getElementById('ov2dOp')?document.getElementById('ov2dOp').value:.9),interactive:false}).addTo(LM);
   LZA=L.polygon(ZA_L,{color:"#00ff88",weight:2.5,fillOpacity:.1,fillColor:"#00ff88"}).bindPopup("<b>Zona Alta</b><br>183.86 ha");
   if(document.getElementById("tZA").checked)LZA.addTo(LM);
   if(CD&&document.getElementById("tCT").checked)BCT2();
@@ -216,7 +217,8 @@ function BCT2(){
   LCT=L.geoJSON({type:"FeatureCollection",features:CD.features.map(function(f){return{type:"Feature",geometry:{type:"LineString",coordinates:f.pts.map(function(p){var ll=u2l(p[0],p[1]);return[ll[1],ll[0]];})},properties:{e:f.e}};})},{style:function(f){return{color:f.properties.e>100?"#cc8800":"#886633",weight:.8,opacity:.55};}}).addTo(LM);
 }
 function SV(v){CV=v;document.getElementById("v3").style.display=v==="3d"?"block":"none";document.getElementById("v2").style.display=v==="2d"?"block":"none";document.getElementById("nav").style.display=v==="3d"?"flex":"none";document.getElementById("s3d").style.display=v==="3d"?"block":"none";document.getElementById("b3d").classList.toggle("on",v==="3d");document.getElementById("b2d").classList.toggle("on",v==="2d");if(v==="2d")OL();}
-function SL(k,btn){CK=k;document.querySelectorAll(".lb").forEach(function(b){b.classList.remove("on");});btn.classList.add("on");BT(k,parseFloat(document.getElementById("vs").value));if(CV==="2d"&&LM&&LO){var SW=u2l(UW,US),NE=u2l(UE,UN2);LM.removeLayer(LO);LO=L.imageOverlay(LINFO[k].f,[SW,NE],{opacity:.75,interactive:false}).addTo(LM);}}
+function SL(k,btn){CK=k;document.querySelectorAll(".lb").forEach(function(b){b.classList.remove("on");});btn.classList.add("on");BT(k,parseFloat(document.getElementById("vs").value));if(CV==="2d"&&LM&&LO){var SW=u2l(UW,US),NE=u2l(UE,UN2);LM.removeLayer(LO);LO=L.imageOverlay(LINFO[k].f,[SW,NE],{opacity:parseFloat(document.getElementById('ov2dOp')?document.getElementById('ov2dOp').value:.9),interactive:false}).addTo(LM);}}
+function S2O(v){document.getElementById("ov2dOpVal").textContent=Math.round(v*100)+"%";if(window.LO)window.LO.setOpacity(parseFloat(v));}
 function SBM(v){BM=v;document.querySelectorAll(".bo").forEach(function(el){el.classList.toggle("sel",el.querySelector("input").value===v);});if(!LM)return;if(LOSM&&LM.hasLayer(LOSM))LM.removeLayer(LOSM);if(LSAT&&LM.hasLayer(LSAT))LM.removeLayer(LSAT);if(v==="osm")LOSM.addTo(LM);else if(v==="sat")LSAT.addTo(LM);}
 function TZA(on){if(ZL)ZL.visible=on;if(LM&&LZA){if(on)LZA.addTo(LM);else LM.removeLayer(LZA);}}
 function TCT(on){CTL.forEach(function(l){l.visible=on;});if(CV==="2d"&&LM){if(on)BCT2();else if(LCT)LM.removeLayer(LCT);}}
@@ -238,7 +240,6 @@ Promise.all([
   fetch("layers_data.json").then(function(r){return r.json();}),
   fetch("contours.json").then(function(r){return r.ok?r.json():null;}).catch(function(){return null;})
 ]).then(function(res){AL=res[0];CD=res[1];BT("dem",5);BZA();document.getElementById("load").style.display="none";}).catch(function(err){fetch("dem_data.json").then(function(r){return r.json();}).then(function(dem){AL={dem:Object.assign({},dem,{n:"DEM (m)",min:0,max:270})};BT("dem",5);BZA();document.getElementById("load").style.display="none";});});
-/* v=fix-utms */
 </script>
 </body>
 </html>
