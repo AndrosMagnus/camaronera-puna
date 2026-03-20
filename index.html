@@ -3,87 +3,190 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Isla Puná – 3D Terrain Map | Camaronera Puna</title>
+<title>Isla Puná – 3D Terrain v1.1 | Camaronera Puna</title>
 <style>
-  * { margin:0; padding:0; box-sizing:border-box; }
-  body { background:#0a0a1a; font-family:'Segoe UI',sans-serif; overflow:hidden; }
-  #canvas { width:100vw; height:100vh; display:block; }
-  #ui {
-    position:fixed; top:16px; left:16px; background:rgba(10,10,30,0.88);
-    border:1px solid rgba(100,160,255,0.3); border-radius:12px;
-    padding:16px 20px; color:#e0e8ff; min-width:220px;
-    backdrop-filter:blur(8px); z-index:100;
-  }
-  #ui h2 { font-size:14px; color:#7eb8ff; letter-spacing:1px; text-transform:uppercase; margin-bottom:4px; }
-  #ui h3 { font-size:11px; color:#8899bb; margin-bottom:12px; font-weight:normal; }
-  .stat { display:flex; justify-content:space-between; margin:4px 0; font-size:12px; }
-  .stat span { color:#aaccff; font-weight:600; }
-  .divider { border:none; border-top:1px solid rgba(100,160,255,0.2); margin:10px 0; }
-  .legend { margin-top:10px; }
-  .legend-title { font-size:11px; color:#8899bb; margin-bottom:6px; }
-  .legend-bar {
-    width:100%; height:16px; border-radius:4px;
-    background: linear-gradient(to right, #440154, #3b528b, #21908c, #5ec962, #fde725, #ff8c00, #ffffff);
-  }
-  .legend-labels { display:flex; justify-content:space-between; font-size:10px; color:#8899bb; margin-top:3px; }
-  #controls {
-    position:fixed; top:16px; right:16px; background:rgba(10,10,30,0.88);
-    border:1px solid rgba(100,160,255,0.3); border-radius:12px;
-    padding:14px 18px; color:#e0e8ff; backdrop-filter:blur(8px); z-index:100;
-  }
-  #controls h3 { font-size:11px; color:#8899bb; margin-bottom:10px; text-transform:uppercase; }
-  .ctrl { display:flex; align-items:center; justify-content:space-between; margin:8px 0; font-size:12px; gap:12px; }
-  input[type=range] { width:100px; accent-color:#7eb8ff; }
-  #elevation-tooltip {
-    position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
-    background:rgba(10,10,30,0.9); border:1px solid rgba(100,160,255,0.4);
-    border-radius:8px; padding:8px 16px; color:#aaccff; font-size:13px;
-    pointer-events:none; display:none;
-  }
-  #instructions {
-    position:fixed; bottom:20px; right:16px;
-    background:rgba(10,10,30,0.7); border-radius:8px;
-    padding:8px 14px; color:#667799; font-size:11px; line-height:1.8;
-  }
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a1a;font-family:'Segoe UI',sans-serif;overflow:hidden;color:#e0e8ff}
+#canvas{width:100vw;height:100vh;display:block;cursor:grab}
+#canvas.dragging{cursor:grabbing}
+
+/* SIDE PANEL */
+#panel{
+  position:fixed;top:0;left:0;height:100vh;width:240px;
+  background:rgba(8,10,28,0.95);border-right:1px solid rgba(100,160,255,0.2);
+  display:flex;flex-direction:column;z-index:200;
+  backdrop-filter:blur(10px);transition:transform .3s ease;
+}
+#panel.collapsed{transform:translateX(-240px)}
+#panel-toggle{
+  position:fixed;top:50%;left:240px;transform:translateY(-50%);
+  width:18px;height:48px;background:rgba(100,160,255,0.25);
+  border:1px solid rgba(100,160,255,0.3);border-left:none;
+  border-radius:0 6px 6px 0;cursor:pointer;z-index:201;
+  display:flex;align-items:center;justify-content:center;
+  font-size:10px;color:#7eb8ff;transition:left .3s ease;
+}
+#panel.collapsed+#panel-toggle{left:0}
+
+#panel-header{
+  padding:16px 14px 10px;border-bottom:1px solid rgba(100,160,255,0.15);
+}
+#panel-header h2{font-size:13px;color:#7eb8ff;letter-spacing:1px;text-transform:uppercase}
+#panel-header p{font-size:10px;color:#556688;margin-top:3px}
+
+.section{padding:12px 14px;border-bottom:1px solid rgba(100,160,255,0.1)}
+.section-title{font-size:10px;color:#556688;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+
+/* Layer buttons */
+.layer-btn{
+  display:flex;align-items:center;gap:8px;width:100%;padding:7px 10px;
+  background:rgba(255,255,255,0.04);border:1px solid rgba(100,160,255,0.15);
+  border-radius:6px;cursor:pointer;margin-bottom:5px;color:#c8d8f0;font-size:12px;
+  transition:all .2s;text-align:left;
+}
+.layer-btn:hover{background:rgba(100,160,255,0.12);border-color:rgba(100,160,255,0.4)}
+.layer-btn.active{background:rgba(100,160,255,0.18);border-color:#7eb8ff;color:#fff}
+.layer-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+
+/* Controls */
+.ctrl-row{display:flex;align-items:center;justify-content:space-between;margin:6px 0;font-size:11px;color:#8899bb}
+input[type=range]{width:90px;accent-color:#7eb8ff;cursor:pointer}
+.toggle-sw{
+  position:relative;width:32px;height:17px;cursor:pointer;
+}
+.toggle-sw input{opacity:0;width:0;height:0}
+.toggle-sw .sl{
+  position:absolute;inset:0;background:#223;border-radius:17px;transition:.3s;
+  border:1px solid rgba(100,160,255,0.2);
+}
+.toggle-sw .sl:before{
+  content:'';position:absolute;width:11px;height:11px;left:2px;bottom:2px;
+  background:#556;border-radius:50%;transition:.3s;
+}
+.toggle-sw input:checked+.sl{background:rgba(100,160,255,0.3)}
+.toggle-sw input:checked+.sl:before{transform:translateX(15px);background:#7eb8ff}
+
+/* North compass */
+#compass{
+  position:fixed;bottom:80px;right:20px;width:52px;height:52px;
+  background:rgba(8,10,28,0.9);border:1px solid rgba(100,160,255,0.3);
+  border-radius:50%;cursor:pointer;z-index:200;display:flex;align-items:center;
+  justify-content:center;transition:transform .1s;
+}
+#compass:hover{border-color:#7eb8ff;transform:scale(1.05)}
+#compass svg{width:36px;height:36px;transition:transform .5s ease}
+
+/* Tooltip */
+#tooltip{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+  background:rgba(8,10,28,0.95);border:1px solid rgba(100,160,255,0.4);
+  border-radius:8px;padding:8px 18px;font-size:13px;color:#aaccff;
+  pointer-events:none;opacity:0;transition:opacity .2s;white-space:nowrap;
+  z-index:300;
+}
+#tooltip.visible{opacity:1}
+
+/* Instructions */
+#hints{
+  position:fixed;bottom:20px;right:80px;
+  font-size:10px;color:#334455;line-height:1.9;text-align:right;
+}
+
+/* Basemap credit */
+#credit{position:fixed;bottom:6px;left:50%;transform:translateX(-50%);
+  font-size:9px;color:#223344;}
 </style>
 </head>
 <body>
 <canvas id="canvas"></canvas>
 
-<div id="ui">
-  <h2>🏔 Isla Puná – 3D Terrain</h2>
-  <h3>Copernicus DEM GLO-30 · 30m resolution</h3>
-  <hr class="divider">
-  <div class="stat">Min Elevation <span>0 m</span></div>
-  <div class="stat">Max Elevation <span>270 m</span></div>
-  <div class="stat">Mean Elevation <span>23 m</span></div>
-  <div class="stat">Resolution <span>30 m/px</span></div>
-  <div class="stat">Source <span>Copernicus 2024</span></div>
-  <hr class="divider">
-  <div class="legend">
-    <div class="legend-title">Elevation (m)</div>
-    <div class="legend-bar"></div>
-    <div class="legend-labels"><span>0</span><span>50</span><span>100</span><span>150</span><span>200</span><span>270</span></div>
+<!-- SIDE PANEL -->
+<div id="panel">
+  <div id="panel-header">
+    <h2>🏔 Camaronera Puná</h2>
+    <p>Isla Puná · Guayas · Ecuador</p>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Base Map</div>
+    <label class="ctrl-row">OpenStreetMap
+      <label class="toggle-sw"><input type="checkbox" id="togBasemap" checked><span class="sl"></span></label>
+    </label>
+    <label class="ctrl-row">Satellite (OSM)
+      <label class="toggle-sw"><input type="checkbox" id="togSatellite"><span class="sl"></span></label>
+    </label>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Overlay Layers</div>
+    <button class="layer-btn active" data-layer="dem" onclick="setLayer('dem',this)">
+      <span class="layer-dot" style="background:linear-gradient(135deg,#440154,#21908c,#fde725)"></span>DEM (Elevation)
+    </button>
+    <button class="layer-btn" data-layer="ndvi" onclick="setLayer('ndvi',this)">
+      <span class="layer-dot" style="background:linear-gradient(135deg,#D7191C,#FFFFBF,#1A9641)"></span>NDVI (Vegetation)
+    </button>
+    <button class="layer-btn" data-layer="ndwi" onclick="setLayer('ndwi',this)">
+      <span class="layer-dot" style="background:linear-gradient(135deg,#D73027,#FFFFBF,#2166AC)"></span>NDWI (Water)
+    </button>
+    <button class="layer-btn" data-layer="mndwi" onclick="setLayer('mndwi',this)">
+      <span class="layer-dot" style="background:linear-gradient(135deg,#D73027,#FFFFBF,#2166AC)"></span>MNDWI (Turbid Water)
+    </button>
+    <button class="layer-btn" data-layer="ndti" onclick="setLayer('ndti',this)">
+      <span class="layer-dot" style="background:linear-gradient(135deg,#2C7BB6,#FFFFBF,#A6611A)"></span>NDTI (Turbidity)
+    </button>
+    <button class="layer-btn" data-layer="hillshade" onclick="setLayer('hillshade',this)">
+      <span class="layer-dot" style="background:linear-gradient(135deg,#111,#888,#fff)"></span>Hillshade
+    </button>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Vector Overlays</div>
+    <label class="ctrl-row">Zona Alta
+      <label class="toggle-sw"><input type="checkbox" id="togZonaAlta" checked onchange="toggleZonaAlta(this.checked)"><span class="sl"></span></label>
+    </label>
+    <label class="ctrl-row">Contours 10m
+      <label class="toggle-sw"><input type="checkbox" id="togContours" onchange="toggleContours(this.checked)"><span class="sl"></span></label>
+    </label>
+  </div>
+
+  <div class="section">
+    <div class="section-title">3D Controls</div>
+    <div class="ctrl-row">Vertical Scale <input type="range" id="vScale" min="1" max="20" value="5" step="0.5" oninput="updateVScale(this.value)"><span id="vScaleVal">5×</span></div>
+    <div class="ctrl-row">Sun Angle <input type="range" id="lightAngle" min="0" max="360" value="315" oninput="updateLight(this.value)"></div>
+    <div class="ctrl-row">Opacity <input type="range" id="opacity" min="0.2" max="1" value="1" step="0.05" oninput="updateOpacity(this.value)"></div>
+    <div class="ctrl-row">Wireframe
+      <label class="toggle-sw"><input type="checkbox" id="togWire" onchange="toggleWireframe(this.checked)"><span class="sl"></span></label>
+    </div>
+  </div>
+
+  <div class="section" style="margin-top:auto">
+    <div class="ctrl-row" style="font-size:10px;color:#334466">
+      Sentinel-2 · 2025-09-25<br>Copernicus DEM GLO-30
+    </div>
   </div>
 </div>
+<div id="panel-toggle" onclick="togglePanel()">‹</div>
 
-<div id="controls">
-  <h3>⚙ Display Controls</h3>
-  <div class="ctrl">Vertical Scale <input type="range" id="vScale" min="1" max="20" value="5" step="0.5"></div>
-  <div class="ctrl">Light Angle <input type="range" id="lightAngle" min="0" max="360" value="315"></div>
-  <div class="ctrl">Opacity <input type="range" id="opacity" min="0.3" max="1" value="1" step="0.05"></div>
-  <div class="ctrl" style="margin-top:10px;">
-    <label><input type="checkbox" id="showContours" checked> Contours</label>
-    <label><input type="checkbox" id="showWireframe"> Wireframe</label>
-  </div>
+<!-- COMPASS -->
+<div id="compass" title="Click to reset North" onclick="resetNorth()">
+  <svg id="compassSvg" viewBox="0 0 36 36">
+    <circle cx="18" cy="18" r="16" fill="none" stroke="rgba(100,160,255,0.3)" stroke-width="1"/>
+    <polygon points="18,4 21,18 18,15 15,18" fill="#e05050"/>
+    <polygon points="18,32 21,18 18,21 15,18" fill="#aabbcc"/>
+    <text x="18" y="8" text-anchor="middle" font-size="5" fill="#e05050" font-weight="bold">N</text>
+    <text x="18" y="33" text-anchor="middle" font-size="5" fill="#778899">S</text>
+    <text x="4"  y="20" text-anchor="middle" font-size="5" fill="#778899">W</text>
+    <text x="32" y="20" text-anchor="middle" font-size="5" fill="#778899">E</text>
+  </svg>
 </div>
 
-<div id="elevation-tooltip"></div>
-<div id="instructions">🖱 Drag to rotate · Scroll to zoom · Right-drag to pan</div>
+<div id="tooltip"></div>
+<div id="hints">🖱 Drag · Scroll zoom · Right-drag pan</div>
+<div id="credit">Basemap © OpenStreetMap contributors · DEM © Copernicus 2024 · Sentinel-2 ESA</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
-const BBOX = {w:-80.2332,s:-2.9819,e:-80.0587,n:-2.8328};
+// ── GLOBALS ─────────────────────────────────────────────────
 const ZONA_ALTA = [
   [593629,9679674],[593674,9679662],[593749,9679683],[593837,9679669],
   [593897,9679672],[593965,9679620],[593968,9679609],[593901,9679552],
@@ -102,188 +205,320 @@ const ZONA_ALTA = [
   [593580,9679572]
 ];
 
-// UTM to normalized 0-1 coords
-const UTM_W = 588000, UTM_E = 602000, UTM_S = 9675000, UTM_N = 9681500;
-function utmToNorm(x, y) {
-  return [(x - UTM_W)/(UTM_E - UTM_W), (y - UTM_S)/(UTM_N - UTM_S)];
-}
+const UTM_W=588000,UTM_E=602000,UTM_S=9675000,UTM_N=9681500;
+const BBOX_WGS={w:-80.2332,s:-2.9819,e:-80.0587,n:-2.8328};
+const TERRAIN_W=200, TERRAIN_H=170;
 
-// Scene setup
-const canvas = document.getElementById('canvas');
-const renderer = new THREE.WebGLRenderer({canvas, antialias:true});
-renderer.setSize(window.innerWidth, window.innerHeight);
+let allLayers={}, currentLayerKey='dem';
+let terrainMesh, wireframeMesh, zonaAltaLine, terrainGeo;
+let rotX=0.5, rotY=0, panX=0, panY=0, zoom=1;
+let isDragging=false, isRightDrag=false, prevX=0, prevY=0;
+let demData=null;
+let basemapMesh=null, basemapVisible=true, satelliteVisible=false;
+let compassAngle=0;
+
+// ── THREE.JS SETUP ───────────────────────────────────────────
+const canvas=document.getElementById('canvas');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});
+renderer.setSize(window.innerWidth,window.innerHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
-renderer.shadowMap.enabled = true;
+renderer.shadowMap.enabled=true;
 
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x0a0a1a);
-scene.fog = new THREE.FogExp2(0x0a0a1a, 0.002);
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x0d1020);
+scene.fog=new THREE.FogExp2(0x0d1020,0.0015);
 
-const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 2000);
-camera.position.set(0, 80, 120);
-camera.lookAt(0, 0, 0);
+const camera=new THREE.PerspectiveCamera(55,window.innerWidth/window.innerHeight,0.1,2000);
+camera.position.set(0,80,130);camera.lookAt(0,0,0);
 
-// Lights
-const ambient = new THREE.AmbientLight(0x334466, 0.8);
-scene.add(ambient);
-const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
-dirLight.position.set(-50, 100, 50);
-dirLight.castShadow = true;
-scene.add(dirLight);
+const ambient=new THREE.AmbientLight(0x334466,0.9);scene.add(ambient);
+const dirLight=new THREE.DirectionalLight(0xfff8ee,1.3);
+dirLight.position.set(-50,100,50);dirLight.castShadow=true;scene.add(dirLight);
 
-// Elevation colormap (viridis-like)
-function elevColor(t) {
-  const colors = [
-    [68,1,84],[59,82,139],[33,145,140],[94,201,98],[253,231,37],[255,140,0],[255,255,255]
-  ];
-  t = Math.max(0, Math.min(1, t));
-  const i = t * (colors.length - 1);
-  const lo = Math.floor(i), hi = Math.ceil(i);
-  const f = i - lo;
-  const c0 = colors[lo], c1 = colors[hi];
+// ── COLORMAPS ────────────────────────────────────────────────
+const CMAPS={
+  dem:    [[68,1,84],[59,82,139],[33,145,140],[94,201,98],[253,231,37],[255,140,0],[255,255,255]],
+  ndvi:   [[215,25,28],[255,255,145],[26,150,65]],
+  ndwi:   [[215,48,39],[255,255,191],[33,102,172]],
+  mndwi:  [[215,48,39],[255,255,191],[33,102,172]],
+  ndti:   [[44,123,182],[255,255,191],[166,97,26]],
+  hillshade:[[0,0,0],[128,128,128],[255,255,255]]
+};
+
+function getColor(t, key){
+  const c=CMAPS[key]||CMAPS.dem;
+  t=Math.max(0,Math.min(1,t));
+  const i=t*(c.length-1), lo=Math.floor(i), hi=Math.ceil(i), f=i-lo;
   return new THREE.Color(
-    (c0[0]+(c1[0]-c0[0])*f)/255,
-    (c0[1]+(c1[1]-c0[1])*f)/255,
-    (c0[2]+(c1[2]-c0[2])*f)/255
+    (c[lo][0]+(c[hi][0]-c[lo][0])*f)/255,
+    (c[lo][1]+(c[hi][1]-c[lo][1])*f)/255,
+    (c[lo][2]+(c[hi][2]-c[lo][2])*f)/255
   );
 }
 
-let terrainMesh, wireframeMesh;
-const terrainGroup = new THREE.Group();
-scene.add(terrainGroup);
+// ── UTM → TERRAIN COORDS ────────────────────────────────────
+function utmToTerrain(utmX, utmY){
+  const nx=(utmX-UTM_W)/(UTM_E-UTM_W);
+  const ny=(utmY-UTM_S)/(UTM_N-UTM_S);
+  return [(nx-0.5)*TERRAIN_W, (ny-0.5)*TERRAIN_H];
+}
 
-fetch('dem_data.json').then(r=>r.json()).then(dem => {
-  const {data, rows, cols, min, max} = dem;
-  const W = 200, H = Math.round(200 * rows/cols);
-  const geo = new THREE.PlaneGeometry(W, H, cols-1, rows-1);
-  geo.rotateX(-Math.PI/2);
+// ── BUILD/UPDATE TERRAIN ────────────────────────────────────
+function buildTerrain(layerKey, vScale){
+  const ld=allLayers[layerKey]||allLayers.dem;
+  const dem=allLayers.dem;
+  const {rows,cols,min,max}=ld;
 
-  const posArr = geo.attributes.position.array;
-  const colors = [];
-  let vScale = 5;
-
-  function buildTerrain(vs) {
-    for (let r=0; r<rows; r++) {
-      for (let c=0; c<cols; c++) {
-        const idx = r*cols+c;
-        const elev = data[r][c];
-        const t = (elev-min)/(max-min);
-        const vIdx = (r*cols+c)*3;
-        posArr[vIdx+1] = elev/max * vs * 20;
-        const col = elevColor(t);
-        colors.push(col.r, col.g, col.b);
-      }
-    }
-    geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-    geo.attributes.position.needsUpdate = true;
-    geo.computeVertexNormals();
+  if(!terrainGeo){
+    terrainGeo=new THREE.PlaneGeometry(TERRAIN_W,TERRAIN_H,cols-1,rows-1);
+    terrainGeo.rotateX(-Math.PI/2);
   }
-  buildTerrain(5);
 
-  const mat = new THREE.MeshPhongMaterial({
-    vertexColors: true, shininess: 20,
-    side: THREE.FrontSide
-  });
-  terrainMesh = new THREE.Mesh(geo, mat);
-  terrainMesh.receiveShadow = true;
-  terrainGroup.add(terrainMesh);
+  const pos=terrainGeo.attributes.position.array;
+  const colors=[];
 
-  // Wireframe overlay
-  const wireMat = new THREE.MeshBasicMaterial({color:0x334466, wireframe:true, opacity:0.15, transparent:true});
-  wireframeMesh = new THREE.Mesh(geo.clone(), wireMat);
-  wireframeMesh.visible = false;
-  terrainGroup.add(wireframeMesh);
+  for(let r=0;r<rows;r++){
+    for(let c=0;c<cols;c++){
+      const vi=(r*cols+c)*3;
+      // Height always from DEM
+      const elev=dem.data[r][c];
+      pos[vi+1]=elev/dem.max*vScale*20;
+      // Color from active layer
+      const val=ld.data[r][c];
+      const t=(val-min)/(max-min);
+      const col=getColor(t, layerKey);
+      colors.push(col.r,col.g,col.b);
+    }
+  }
 
-  // Add Zona Alta polygon outline
-  const shape = new THREE.BufferGeometry();
-  const pts3d = [];
-  ZONA_ALTA.forEach(([utmX, utmY]) => {
-    const [nx, ny] = utmToNorm(utmX, utmY);
-    const px = (nx - 0.5) * W;
-    const pz = -(ny - 0.5) * H;
-    // Sample elevation at this position
-    const ci = Math.round(nx * (cols-1));
-    const ri = Math.round((1-ny) * (rows-1));
-    const elev = (ri>=0&&ri<rows&&ci>=0&&ci<cols) ? data[ri][ci] : 10;
-    const py = elev/max * 5 * 20 + 2;
-    pts3d.push(px, py, pz);
-  });
-  // close polygon
-  pts3d.push(pts3d[0], pts3d[1], pts3d[2]);
-  shape.setAttribute('position', new THREE.Float32BufferAttribute(pts3d, 3));
-  const lineMat = new THREE.LineBasicMaterial({color:0x00ff88, linewidth:3});
-  const line = new THREE.Line(shape, lineMat);
-  terrainGroup.add(line);
+  terrainGeo.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));
+  terrainGeo.attributes.position.needsUpdate=true;
+  terrainGeo.computeVertexNormals();
 
-  // Label
-  // Vertical exaggeration control
-  document.getElementById('vScale').addEventListener('input', e => {
-    const vs = parseFloat(e.target.value);
-    const pos = geo.attributes.position.array;
-    for (let r=0; r<rows; r++)
-      for (let c=0; c<cols; c++) {
-        const vIdx = (r*cols+c)*3;
-        const elev = data[r][c];
-        pos[vIdx+1] = elev/max * vs * 20;
-      }
-    geo.attributes.position.needsUpdate = true;
-    geo.computeVertexNormals();
-  });
+  if(!terrainMesh){
+    const mat=new THREE.MeshPhongMaterial({vertexColors:true,shininess:15,side:THREE.FrontSide});
+    terrainMesh=new THREE.Mesh(terrainGeo,mat);
+    terrainMesh.receiveShadow=true;
+    scene.add(terrainMesh);
 
-  document.getElementById('showWireframe').addEventListener('change', e => {
-    wireframeMesh.visible = e.target.checked;
-  });
-
-  document.getElementById('opacity').addEventListener('input', e => {
-    terrainMesh.material.opacity = parseFloat(e.target.value);
-    terrainMesh.material.transparent = parseFloat(e.target.value) < 1;
-  });
-
-  document.getElementById('lightAngle').addEventListener('input', e => {
-    const a = parseFloat(e.target.value) * Math.PI/180;
-    dirLight.position.set(Math.cos(a)*80, 100, Math.sin(a)*80);
-  });
-});
-
-// Orbit controls (manual implementation)
-let isDragging=false, isRightDrag=false;
-let prevX=0, prevY=0;
-let rotX=0.4, rotY=0;
-let panX=0, panY=0;
-let zoom=1;
-
-canvas.addEventListener('mousedown', e => {
-  isDragging=true; isRightDrag=(e.button===2);
-  prevX=e.clientX; prevY=e.clientY;
-});
-canvas.addEventListener('contextmenu', e=>e.preventDefault());
-canvas.addEventListener('mousemove', e => {
-  if (!isDragging) return;
-  const dx=(e.clientX-prevX)*0.005, dy=(e.clientY-prevY)*0.005;
-  if (isRightDrag) { panX+=dx*50; panY-=dy*50; }
-  else { rotY+=dx; rotX+=dy; rotX=Math.max(-0.1,Math.min(1.2,rotX)); }
-  prevX=e.clientX; prevY=e.clientY;
-});
-canvas.addEventListener('mouseup', ()=>isDragging=false);
-canvas.addEventListener('wheel', e=>{ zoom*=(e.deltaY>0?1.1:0.9); zoom=Math.max(0.2,Math.min(5,zoom)); });
-
-function animate() {
-  requestAnimationFrame(animate);
-  const r = 150*zoom;
-  camera.position.set(
-    Math.sin(rotY)*Math.cos(rotX)*r + panX,
-    Math.sin(rotX)*r + 10,
-    Math.cos(rotY)*Math.cos(rotX)*r + panY
-  );
-  camera.lookAt(panX, 0, panY);
-  renderer.render(scene, camera);
+    const wireMat=new THREE.MeshBasicMaterial({color:0x334466,wireframe:true,opacity:0.12,transparent:true});
+    wireframeMesh=new THREE.Mesh(terrainGeo,wireMat);
+    wireframeMesh.visible=false;
+    scene.add(wireframeMesh);
+  }
 }
-animate();
 
-window.addEventListener('resize', ()=>{
+// ── ZONA ALTA LINE ───────────────────────────────────────────
+function buildZonaAlta(){
+  const dem=allLayers.dem;
+  const vs=parseFloat(document.getElementById('vScale').value);
+  const pts=[];
+  ZONA_ALTA.forEach(([ux,uy])=>{
+    const [tx,tz]=utmToTerrain(ux,uy);
+    const nx=Math.round(((ux-UTM_W)/(UTM_E-UTM_W))*(dem.cols-1));
+    const ny=Math.round((1-(uy-UTM_S)/(UTM_N-UTM_S))*(dem.rows-1));
+    const elev=(ny>=0&&ny<dem.rows&&nx>=0&&nx<dem.cols)?dem.data[ny][nx]:5;
+    pts.push(tx, elev/dem.max*vs*20+2, -tz);
+  });
+  // close
+  pts.push(pts[0],pts[1],pts[2]);
+  const geo=new THREE.BufferGeometry();
+  geo.setAttribute('position',new THREE.Float32BufferAttribute(pts,3));
+  const mat=new THREE.LineBasicMaterial({color:0x00ff88,linewidth:2});
+  if(zonaAltaLine){scene.remove(zonaAltaLine);}
+  zonaAltaLine=new THREE.Line(geo,mat);
+  scene.add(zonaAltaLine);
+}
+
+// ── BASEMAP PLANE ────────────────────────────────────────────
+function buildBasemap(tileUrl, id){
+  if(basemapMesh){scene.remove(basemapMesh);basemapMesh=null;}
+  const loader=new THREE.TextureLoader();
+  // Use OSM tile centered on area
+  const lat=-2.907, lon=-80.146, zoom_=13;
+  const x=Math.floor((lon+180)/360*Math.pow(2,zoom_));
+  const y=Math.floor((1-Math.log(Math.tan(lat*Math.PI/180)+1/Math.cos(lat*Math.PI/180))/Math.PI)/2*Math.pow(2,zoom_));
+  const url=tileUrl.replace('{z}',zoom_).replace('{x}',x).replace('{y}',y);
+  loader.load(url, tex=>{
+    const geo=new THREE.PlaneGeometry(TERRAIN_W*1.5, TERRAIN_H*1.5);
+    geo.rotateX(-Math.PI/2);
+    const mat=new THREE.MeshBasicMaterial({map:tex,transparent:true,opacity:0.7,depthWrite:false});
+    basemapMesh=new THREE.Mesh(geo,mat);
+    basemapMesh.position.y=-0.5;
+    basemapMesh.visible=basemapVisible;
+    scene.add(basemapMesh);
+  }, undefined, ()=>{});
+}
+
+// ── RAYCASTER FOR HOVER ──────────────────────────────────────
+const raycaster=new THREE.Raycaster();
+const mouse=new THREE.Vector2();
+const tooltip=document.getElementById('tooltip');
+
+function onMouseMove(e){
+  if(isDragging) return;
+  mouse.x=(e.clientX/window.innerWidth)*2-1;
+  mouse.y=-(e.clientY/window.innerHeight)*2+1;
+  raycaster.setFromCamera(mouse,camera);
+  if(!terrainMesh) return;
+  const hits=raycaster.intersectObject(terrainMesh);
+  if(hits.length>0){
+    const pt=hits[0].point;
+    // Convert terrain X,Z back to UTM
+    const utmX=(pt.x/TERRAIN_W+0.5)*(UTM_E-UTM_W)+UTM_W;
+    const utmZ=(-pt.z/TERRAIN_H+0.5)*(UTM_N-UTM_S)+UTM_S;
+    const dem=allLayers.dem;
+    const nx=Math.round(((utmX-UTM_W)/(UTM_E-UTM_W))*(dem.cols-1));
+    const ny=Math.round((1-(utmZ-UTM_S)/(UTM_N-UTM_S))*(dem.rows-1));
+    let elevStr='–';
+    if(nx>=0&&nx<dem.cols&&ny>=0&&ny<dem.rows){
+      elevStr=dem.data[ny][nx].toFixed(1)+' m';
+    }
+    // Active layer value
+    const ld=allLayers[currentLayerKey];
+    let layerStr='';
+    if(ld&&nx>=0&&nx<ld.cols&&ny>=0&&ny<ld.rows){
+      const v=ld.data[ny][nx];
+      const unit=currentLayerKey==='dem'?'m':'';
+      layerStr=` │ ${ld.name}: ${v.toFixed(3)}${unit}`;
+    }
+    tooltip.textContent=`📍 UTM ${Math.round(utmX)}E, ${Math.round(utmZ)}N │ Elev: ${elevStr}${layerStr}`;
+    tooltip.classList.add('visible');
+  } else {
+    tooltip.classList.remove('visible');
+  }
+}
+canvas.addEventListener('mousemove', onMouseMove);
+
+// ── CONTROLS ─────────────────────────────────────────────────
+function setLayer(key, btn){
+  currentLayerKey=key;
+  document.querySelectorAll('.layer-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const vs=parseFloat(document.getElementById('vScale').value);
+  buildTerrain(key, vs);
+}
+
+function updateVScale(v){
+  document.getElementById('vScaleVal').textContent=v+'×';
+  buildTerrain(currentLayerKey, parseFloat(v));
+  buildZonaAlta();
+}
+
+function updateLight(v){
+  const a=parseFloat(v)*Math.PI/180;
+  dirLight.position.set(Math.cos(a)*80,100,Math.sin(a)*80);
+}
+
+function updateOpacity(v){
+  if(terrainMesh){terrainMesh.material.opacity=parseFloat(v);terrainMesh.material.transparent=parseFloat(v)<1;}
+}
+
+function toggleWireframe(on){ if(wireframeMesh) wireframeMesh.visible=on; }
+
+function toggleZonaAlta(on){ if(zonaAltaLine) zonaAltaLine.visible=on; }
+
+function toggleContours(on){
+  // placeholder — contours as flat lines not yet loaded
+}
+
+document.getElementById('togBasemap').addEventListener('change',e=>{
+  basemapVisible=e.target.checked;
+  if(basemapMesh) basemapMesh.visible=basemapVisible;
+  if(basemapVisible&&!basemapMesh) buildBasemap('https://tile.openstreetmap.org/{z}/{x}/{y}.png','osm');
+});
+
+document.getElementById('togSatellite').addEventListener('change',e=>{
+  if(e.target.checked){
+    document.getElementById('togBasemap').checked=false;
+    buildBasemap('https://tile.openstreetmap.org/{z}/{x}/{y}.png','osm');
+  }
+});
+
+// ── NORTH / COMPASS ─────────────────────────────────────────
+function resetNorth(){
+  rotY=0; rotX=0.5;
+  document.getElementById('compassSvg').style.transform='rotate(0deg)';
+  updateCompass();
+}
+
+function updateCompass(){
+  // Rotate compass needle opposite to camera yaw
+  document.getElementById('compassSvg').style.transform=`rotate(${rotY*180/Math.PI}deg)`;
+}
+
+// ── ORBIT CONTROLS ───────────────────────────────────────────
+canvas.addEventListener('mousedown',e=>{
+  isDragging=true;isRightDrag=(e.button===2);
+  prevX=e.clientX;prevY=e.clientY;
+  canvas.classList.add('dragging');
+});
+canvas.addEventListener('contextmenu',e=>e.preventDefault());
+canvas.addEventListener('mousemove',e=>{
+  if(!isDragging) return;
+  const dx=(e.clientX-prevX)*0.005, dy=(e.clientY-prevY)*0.005;
+  if(isRightDrag){panX+=dx*50;panY-=dy*50;}
+  else{rotY+=dx;rotX+=dy;rotX=Math.max(-0.05,Math.min(1.3,rotX));}
+  updateCompass();
+  prevX=e.clientX;prevY=e.clientY;
+});
+canvas.addEventListener('mouseup',()=>{isDragging=false;canvas.classList.remove('dragging');});
+canvas.addEventListener('wheel',e=>{zoom*=(e.deltaY>0?1.08:0.93);zoom=Math.max(0.2,Math.min(6,zoom));});
+
+// Touch support
+canvas.addEventListener('touchstart',e=>{
+  if(e.touches.length===1){isDragging=true;prevX=e.touches[0].clientX;prevY=e.touches[0].clientY;}
+});
+canvas.addEventListener('touchmove',e=>{
+  if(!isDragging||e.touches.length!==1) return;
+  const dx=(e.touches[0].clientX-prevX)*0.005, dy=(e.touches[0].clientY-prevY)*0.005;
+  rotY+=dx;rotX+=dy;rotX=Math.max(-0.05,Math.min(1.3,rotX));
+  updateCompass();prevX=e.touches[0].clientX;prevY=e.touches[0].clientY;
+});
+canvas.addEventListener('touchend',()=>isDragging=false);
+
+function togglePanel(){
+  const p=document.getElementById('panel');
+  const t=document.getElementById('panel-toggle');
+  p.classList.toggle('collapsed');
+  t.textContent=p.classList.contains('collapsed')?'›':'‹';
+}
+
+// ── ANIMATION LOOP ────────────────────────────────────────────
+function animate(){
+  requestAnimationFrame(animate);
+  const r=150*zoom;
+  camera.position.set(
+    Math.sin(rotY)*Math.cos(rotX)*r+panX,
+    Math.sin(rotX)*r+10,
+    Math.cos(rotY)*Math.cos(rotX)*r+panY
+  );
+  camera.lookAt(panX,0,panY);
+  renderer.render(scene,camera);
+}
+
+window.addEventListener('resize',()=>{
   camera.aspect=window.innerWidth/window.innerHeight;
   camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setSize(window.innerWidth,window.innerHeight);
+});
+
+// ── INIT ─────────────────────────────────────────────────────
+fetch('layers_data.json').then(r=>r.json()).then(data=>{
+  allLayers=data;
+  buildTerrain('dem', 5);
+  buildZonaAlta();
+  // Try basemap tile
+  buildBasemap('https://tile.openstreetmap.org/{z}/{x}/{y}.png','osm');
+  animate();
+}).catch(()=>{
+  // fallback: just dem_data.json
+  fetch('dem_data.json').then(r=>r.json()).then(dem=>{
+    allLayers={dem:{...dem,name:'DEM (m)'}};
+    buildTerrain('dem',5);
+    buildZonaAlta();
+    animate();
+  });
 });
 </script>
 </body>
