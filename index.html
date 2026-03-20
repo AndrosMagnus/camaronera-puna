@@ -2,207 +2,190 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Isla Puná – Terrain v1.2 | Camaronera Puna</title>
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Isla Puná – Terrain v1.3 | Camaronera Puna</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:#0d1020;font-family:'Segoe UI',sans-serif;overflow:hidden;color:#e0e8ff}
-
-/* ── VIEWS ── */
-#view3d{position:fixed;inset:0;z-index:1}
-#view2d{position:fixed;inset:0;z-index:1;display:none}
+#view3d,#view2d{position:fixed;inset:0;z-index:1}
+#view2d{display:none}
 #canvas{width:100%;height:100%;display:block;cursor:grab}
-#canvas.dragging{cursor:grabbing}
+#canvas.drag{cursor:grabbing}
 
-/* ── PANEL ── */
-#panel{
-  position:fixed;top:0;left:0;height:100vh;width:250px;
-  background:rgba(8,10,28,0.96);border-right:1px solid rgba(100,160,255,0.2);
-  display:flex;flex-direction:column;z-index:500;overflow-y:auto;
-  transition:transform .3s ease;
-}
-#panel.collapsed{transform:translateX(-250px)}
-#ptoggle{
-  position:fixed;top:50%;left:250px;transform:translateY(-50%);
-  width:18px;height:48px;background:rgba(100,160,255,0.2);
-  border:1px solid rgba(100,160,255,0.3);border-left:none;
-  border-radius:0 6px 6px 0;cursor:pointer;z-index:501;
-  display:flex;align-items:center;justify-content:center;
-  font-size:10px;color:#7eb8ff;transition:left .3s;user-select:none;
-}
-#panel.collapsed~#ptoggle{left:0}
+/* PANEL */
+#panel{position:fixed;top:0;left:0;height:100vh;width:256px;background:rgba(7,9,22,0.97);
+  border-right:1px solid rgba(100,160,255,0.18);display:flex;flex-direction:column;
+  z-index:500;overflow-y:auto;transition:transform .3s;scrollbar-width:thin;scrollbar-color:#1a2540 transparent}
+#panel.off{transform:translateX(-256px)}
+#ptog{position:fixed;top:50%;left:256px;transform:translateY(-50%);width:18px;height:46px;
+  background:rgba(100,160,255,0.18);border:1px solid rgba(100,160,255,0.28);border-left:none;
+  border-radius:0 6px 6px 0;cursor:pointer;z-index:501;display:flex;align-items:center;
+  justify-content:center;font-size:10px;color:#7eb8ff;transition:left .3s;user-select:none}
+#panel.off~#ptog{left:0}
 
-.ph{padding:14px 14px 10px;border-bottom:1px solid rgba(100,160,255,0.15)}
+.ph{padding:14px 14px 10px;border-bottom:1px solid rgba(100,160,255,0.12)}
 .ph h2{font-size:13px;color:#7eb8ff;letter-spacing:1px;text-transform:uppercase}
-.ph p{font-size:10px;color:#445566;margin-top:2px}
+.ph p{font-size:10px;color:#38485a;margin-top:2px}
+.sec{padding:9px 14px;border-bottom:1px solid rgba(100,160,255,0.08)}
+.st{font-size:10px;color:#38485a;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
 
-.sec{padding:10px 14px;border-bottom:1px solid rgba(100,160,255,0.1)}
-.sec-t{font-size:10px;color:#445566;text-transform:uppercase;letter-spacing:1px;margin-bottom:7px}
+/* View tabs */
+.vtabs{display:flex;gap:6px}
+.vt{flex:1;padding:7px 0;border-radius:6px;border:1px solid rgba(100,160,255,0.18);
+  background:rgba(255,255,255,0.03);cursor:pointer;font-size:12px;color:#7799bb;
+  text-align:center;transition:all .18s}
+.vt.on{background:rgba(100,160,255,0.2);border-color:#7eb8ff;color:#fff}
 
-/* View toggle */
-.view-tabs{display:flex;gap:6px;margin-bottom:2px}
-.vtab{flex:1;padding:7px 0;border-radius:6px;border:1px solid rgba(100,160,255,0.2);
-  background:rgba(255,255,255,0.03);cursor:pointer;font-size:12px;color:#8899bb;
-  text-align:center;transition:all .2s}
-.vtab.active{background:rgba(100,160,255,0.2);border-color:#7eb8ff;color:#fff}
+/* Basemap radio */
+.bm-opt{display:flex;align-items:center;gap:8px;padding:5px 0;cursor:pointer;font-size:12px;color:#8899bb}
+.bm-opt input[type=radio]{accent-color:#7eb8ff;width:13px;height:13px;cursor:pointer}
+.bm-opt.sel{color:#c8d8f0}
 
 /* Layer buttons */
-.lbtn{
-  display:flex;align-items:center;gap:8px;width:100%;padding:6px 10px;
-  background:rgba(255,255,255,0.03);border:1px solid rgba(100,160,255,0.12);
-  border-radius:6px;cursor:pointer;margin-bottom:4px;color:#b0c4e0;font-size:12px;
-  transition:all .2s;text-align:left;
-}
-.lbtn:hover{background:rgba(100,160,255,0.1);border-color:rgba(100,160,255,0.35)}
-.lbtn.active{background:rgba(100,160,255,0.18);border-color:#7eb8ff;color:#fff}
-.ldot{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+.lb{display:flex;align-items:center;gap:8px;width:100%;padding:6px 10px;
+  background:rgba(255,255,255,0.03);border:1px solid rgba(100,160,255,0.1);
+  border-radius:6px;cursor:pointer;margin-bottom:4px;color:#9ab0c8;font-size:12px;
+  transition:all .18s;text-align:left}
+.lb:hover{background:rgba(100,160,255,0.09);border-color:rgba(100,160,255,0.3)}
+.lb.on{background:rgba(100,160,255,0.17);border-color:#7eb8ff;color:#fff}
+.ld{width:10px;height:10px;border-radius:2px;flex-shrink:0}
 
-/* Toggles */
-.ctrl{display:flex;align-items:center;justify-content:space-between;margin:5px 0;font-size:11px;color:#7788aa}
-input[type=range]{width:85px;accent-color:#7eb8ff;cursor:pointer}
-.sw{position:relative;width:32px;height:17px;flex-shrink:0}
+/* Toggle switch */
+.row{display:flex;align-items:center;justify-content:space-between;margin:5px 0;font-size:11px;color:#607080}
+input[type=range]{width:88px;accent-color:#7eb8ff;cursor:pointer}
+.sw{position:relative;width:32px;height:17px;flex-shrink:0;cursor:pointer}
 .sw input{opacity:0;width:0;height:0;position:absolute}
-.sw .s{position:absolute;inset:0;background:#1a1f30;border-radius:17px;
-  border:1px solid rgba(100,160,255,0.2);transition:.25s;cursor:pointer}
-.sw .s:before{content:'';position:absolute;width:11px;height:11px;left:2px;
-  bottom:2px;background:#445;border-radius:50%;transition:.25s}
-.sw input:checked+.s{background:rgba(100,160,255,0.28)}
-.sw input:checked+.s:before{transform:translateX(15px);background:#7eb8ff}
+.sw .sl{position:absolute;inset:0;background:#151d2e;border-radius:17px;
+  border:1px solid rgba(100,160,255,0.18);transition:.22s}
+.sw .sl:before{content:'';position:absolute;width:11px;height:11px;left:2px;bottom:2px;
+  background:#3a4a5e;border-radius:50%;transition:.22s}
+.sw input:checked+.sl{background:rgba(100,160,255,0.26)}
+.sw input:checked+.sl:before{transform:translateX(15px);background:#7eb8ff}
 
 /* Compass */
-#compass{
-  position:fixed;bottom:72px;right:18px;width:50px;height:50px;
-  background:rgba(8,10,28,0.92);border:1px solid rgba(100,160,255,0.3);
-  border-radius:50%;cursor:pointer;z-index:400;display:flex;
-  align-items:center;justify-content:center;transition:transform .1s;
-}
-#compass:hover{border-color:#7eb8ff;transform:scale(1.08)}
-#cSvg{width:34px;height:34px;transition:transform .4s ease}
+#compass{position:fixed;bottom:68px;right:18px;width:50px;height:50px;
+  background:rgba(7,9,22,0.92);border:1px solid rgba(100,160,255,0.28);
+  border-radius:50%;cursor:pointer;z-index:400;display:flex;align-items:center;
+  justify-content:center}
+#compass:hover{border-color:#7eb8ff}
+#cSvg{width:34px;height:34px;transition:transform .35s ease}
 
 /* Legend */
-#legend{
-  position:fixed;bottom:18px;left:260px;z-index:400;
-  background:rgba(8,10,28,0.9);border:1px solid rgba(100,160,255,0.2);
-  border-radius:8px;padding:8px 12px;min-width:180px;
-}
-#legend.hidden{display:none}
-.leg-bar{width:100%;height:12px;border-radius:3px;margin:4px 0}
-.leg-labels{display:flex;justify-content:space-between;font-size:9px;color:#556677}
-#leg-title{font-size:10px;color:#7eb8ff;margin-bottom:2px}
+#legend{position:fixed;bottom:16px;left:266px;z-index:400;
+  background:rgba(7,9,22,0.92);border:1px solid rgba(100,160,255,0.18);
+  border-radius:8px;padding:8px 12px;min-width:180px}
+.lb-bar{width:100%;height:11px;border-radius:3px;margin:4px 0}
+.lb-lbl{display:flex;justify-content:space-between;font-size:9px;color:#445566}
+#lt{font-size:10px;color:#7eb8ff;margin-bottom:1px}
 
 /* Tooltip */
-#tip{
-  position:fixed;bottom:18px;left:50%;transform:translateX(-50%);
-  background:rgba(8,10,28,0.96);border:1px solid rgba(100,160,255,0.35);
-  border-radius:8px;padding:7px 16px;font-size:12px;color:#aaccff;
-  pointer-events:none;opacity:0;transition:opacity .15s;white-space:nowrap;z-index:600;
-}
+#tip{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);
+  background:rgba(7,9,22,0.96);border:1px solid rgba(100,160,255,0.32);
+  border-radius:8px;padding:6px 15px;font-size:12px;color:#aaccff;
+  pointer-events:none;opacity:0;transition:opacity .15s;white-space:nowrap;z-index:600}
 #tip.show{opacity:1}
-
-#hints{position:fixed;bottom:18px;right:76px;font-size:10px;color:#2a3344;line-height:2}
+#hints{position:fixed;bottom:16px;right:76px;font-size:10px;color:#232d3a;line-height:2}
 </style>
 </head>
 <body>
 
-<!-- 3D VIEW -->
-<div id="view3d">
-  <canvas id="canvas"></canvas>
-</div>
+<div id="view3d"><canvas id="canvas"></canvas></div>
+<div id="view2d"><div id="map" style="width:100%;height:100vh"></div></div>
 
-<!-- 2D VIEW -->
-<div id="view2d">
-  <div id="map" style="width:100%;height:100vh"></div>
-</div>
-
-<!-- PANEL -->
 <div id="panel">
-  <div class="ph">
-    <h2>🏔 Camaronera Puná</h2>
-    <p>Isla Puná · Guayas · Ecuador</p>
-  </div>
+  <div class="ph"><h2>🏔 Camaronera Puná</h2><p>Isla Puná · Guayas · Ecuador</p></div>
 
   <div class="sec">
-    <div class="sec-t">View Mode</div>
-    <div class="view-tabs">
-      <div class="vtab active" id="btn3d" onclick="switchView('3d')">🗻 3D</div>
-      <div class="vtab" id="btn2d" onclick="switchView('2d')">🗺 2D Map</div>
+    <div class="st">View Mode</div>
+    <div class="vtabs">
+      <div class="vt on" id="b3d" onclick="setView('3d')">🗻 3D</div>
+      <div class="vt"    id="b2d" onclick="setView('2d')">🗺 2D Map</div>
     </div>
   </div>
 
-  <div class="sec" id="sec-basemap">
-    <div class="sec-t">Base Map</div>
-    <label class="ctrl">OpenStreetMap
-      <label class="sw"><input type="checkbox" id="togOSM" checked onchange="onBasemapChange()"><span class="s"></span></label>
-    </label>
-    <label class="ctrl">Satellite (ESRI)
-      <label class="sw"><input type="checkbox" id="togSat" onchange="onSatChange()"><span class="s"></span></label>
-    </label>
+  <div class="sec">
+    <div class="st">Base Map</div>
+    <label class="bm-opt sel"><input type="radio" name="bm" value="osm"  checked onchange="setBM('osm')"> OpenStreetMap</label>
+    <label class="bm-opt">     <input type="radio" name="bm" value="sat"        onchange="setBM('sat')"> Satellite (ESRI)</label>
+    <label class="bm-opt">     <input type="radio" name="bm" value="none"       onchange="setBM('none')"> None</label>
   </div>
 
   <div class="sec">
-    <div class="sec-t">Overlay Layers</div>
-    <button class="lbtn active" data-k="dem"       onclick="setLayer('dem',this)"><span class="ldot" style="background:linear-gradient(90deg,#440154,#21908c,#fde725)"></span>DEM – Elevation</button>
-    <button class="lbtn"        data-k="ndvi"      onclick="setLayer('ndvi',this)"><span class="ldot" style="background:linear-gradient(90deg,#D7191C,#FFFFBF,#1A9641)"></span>NDVI – Vegetation</button>
-    <button class="lbtn"        data-k="ndwi"      onclick="setLayer('ndwi',this)"><span class="ldot" style="background:linear-gradient(90deg,#D73027,#FFFFBF,#2166AC)"></span>NDWI – Water</button>
-    <button class="lbtn"        data-k="mndwi"     onclick="setLayer('mndwi',this)"><span class="ldot" style="background:linear-gradient(90deg,#D73027,#FFFFBF,#2166AC)"></span>MNDWI – Turbid Water</button>
-    <button class="lbtn"        data-k="ndti"      onclick="setLayer('ndti',this)"><span class="ldot" style="background:linear-gradient(90deg,#2C7BB6,#FFFFBF,#A6611A)"></span>NDTI – Turbidity</button>
-    <button class="lbtn"        data-k="hillshade" onclick="setLayer('hillshade',this)"><span class="ldot" style="background:linear-gradient(90deg,#111,#888,#fff)"></span>Hillshade</button>
+    <div class="st">Overlay Layers</div>
+    <button class="lb on" data-k="dem"       onclick="setLayer('dem',this)"><span class="ld" style="background:linear-gradient(90deg,#440154,#21908c,#fde725)"></span>DEM – Elevation</button>
+    <button class="lb"    data-k="ndvi"      onclick="setLayer('ndvi',this)"><span class="ld" style="background:linear-gradient(90deg,#D7191C,#FFFFBF,#1A9641)"></span>NDVI – Vegetation</button>
+    <button class="lb"    data-k="ndwi"      onclick="setLayer('ndwi',this)"><span class="ld" style="background:linear-gradient(90deg,#D73027,#FFFFBF,#2166AC)"></span>NDWI – Water</button>
+    <button class="lb"    data-k="mndwi"     onclick="setLayer('mndwi',this)"><span class="ld" style="background:linear-gradient(90deg,#D73027,#FFFFBF,#2166AC)"></span>MNDWI – Turbid Water</button>
+    <button class="lb"    data-k="ndti"      onclick="setLayer('ndti',this)"><span class="ld" style="background:linear-gradient(90deg,#2C7BB6,#FFFFBF,#A6611A)"></span>NDTI – Turbidity</button>
+    <button class="lb"    data-k="hillshade" onclick="setLayer('hillshade',this)"><span class="ld" style="background:linear-gradient(90deg,#111,#888,#fff)"></span>Hillshade</button>
   </div>
 
   <div class="sec">
-    <div class="sec-t">Vectors</div>
-    <label class="ctrl">Zona Alta
-      <label class="sw"><input type="checkbox" id="togZA" checked onchange="toggleZonaAlta(this.checked)"><span class="s"></span></label>
-    </label>
+    <div class="st">Vectors</div>
+    <label class="row">Zona Alta   <label class="sw"><input type="checkbox" id="togZA" checked onchange="toggleZA(this.checked)"><span class="sl"></span></label></label>
+    <label class="row">Contours 10m<label class="sw"><input type="checkbox" id="togCT" onchange="toggleCT(this.checked)"><span class="sl"></span></label></label>
   </div>
 
-  <div class="sec" id="sec-3d">
-    <div class="sec-t">3D Settings</div>
-    <div class="ctrl">Vert. Scale <span id="vsVal">5×</span><input type="range" id="vs" min="1" max="20" value="5" step="0.5" oninput="onVScale(this.value)"></div>
-    <div class="ctrl">Sun Angle <input type="range" id="la" min="0" max="360" value="315" oninput="onLight(this.value)"></div>
-    <div class="ctrl">Opacity <input type="range" id="op" min="0.2" max="1" value="1" step="0.05" oninput="onOpacity(this.value)"></div>
-    <div class="ctrl">Wireframe<label class="sw"><input type="checkbox" id="wf" onchange="toggleWF(this.checked)"><span class="s"></span></label></div>
+  <div class="sec" id="s3d">
+    <div class="st">3D Settings</div>
+    <div class="row">Vert. Scale <span id="vsv">5×</span><input type="range" id="vs" min="1" max="20" value="5" step="0.5" oninput="onVS(this.value)"></div>
+    <div class="row">Sun Angle  <input type="range" id="la" min="0" max="360" value="315" oninput="onLA(this.value)"></div>
+    <div class="row">Opacity    <input type="range" id="op" min="0.2" max="1" value="1" step="0.05" oninput="onOP(this.value)"></div>
+    <div class="row">Wireframe  <label class="sw"><input type="checkbox" id="wf" onchange="toggleWF(this.checked)"><span class="sl"></span></label></div>
   </div>
 
-  <div class="sec" style="font-size:9px;color:#2a3344;line-height:1.8">
-    Sentinel-2 L2A · 2025-09-25<br>
-    Copernicus DEM GLO-30 · 30m<br>
-    © ESA / Copernicus / OSM
+  <div class="sec" style="font-size:9px;color:#1e2a36;line-height:1.9">
+    Sentinel-2 L2A · 2025-09-25<br>Copernicus DEM GLO-30 · 30m<br>© ESA / Copernicus / OSM / Esri
   </div>
 </div>
-<div id="ptoggle" onclick="togglePanel()">‹</div>
+<div id="ptog" onclick="togglePanel()">‹</div>
 
-<!-- COMPASS (3D only) -->
 <div id="compass" title="Reset North" onclick="resetNorth()">
   <svg id="cSvg" viewBox="0 0 34 34">
-    <circle cx="17" cy="17" r="15" fill="none" stroke="rgba(100,160,255,0.25)" stroke-width="1"/>
-    <polygon points="17,3 20,17 17,13 14,17" fill="#e05050"/>
-    <polygon points="17,31 20,17 17,21 14,17" fill="#6688aa"/>
-    <text x="17" y="7"  text-anchor="middle" font-size="5" fill="#e05050" font-weight="bold">N</text>
-    <text x="17" y="31" text-anchor="middle" font-size="5" fill="#6688aa">S</text>
-    <text x="3"  y="19" text-anchor="middle" font-size="5" fill="#6688aa">W</text>
-    <text x="31" y="19" text-anchor="middle" font-size="5" fill="#6688aa">E</text>
+    <circle cx="17" cy="17" r="15" fill="none" stroke="rgba(100,160,255,0.22)" stroke-width="1"/>
+    <polygon points="17,3 20,17 17,13 14,17" fill="#d04040"/>
+    <polygon points="17,31 20,17 17,21 14,17" fill="#556677"/>
+    <text x="17" y="7.5" text-anchor="middle" font-size="5" fill="#d04040" font-weight="bold">N</text>
+    <text x="17" y="31"  text-anchor="middle" font-size="5" fill="#556677">S</text>
+    <text x="3"  y="19"  text-anchor="middle" font-size="5" fill="#556677">W</text>
+    <text x="31" y="19"  text-anchor="middle" font-size="5" fill="#556677">E</text>
   </svg>
 </div>
 
-<!-- LEGEND -->
 <div id="legend">
-  <div id="leg-title">DEM – Elevation</div>
-  <div class="leg-bar" id="leg-bar" style="background:linear-gradient(90deg,#440154,#21908c,#fde725,#ff8c00,#fff)"></div>
-  <div class="leg-labels"><span id="leg-min">0 m</span><span id="leg-max">270 m</span></div>
+  <div id="lt">DEM – Elevation</div>
+  <div class="lb-bar" id="lbar" style="background:linear-gradient(90deg,#440154,#21908c,#fde725,#ff8c00,#fff)"></div>
+  <div class="lb-lbl"><span id="lmin">0 m</span><span id="lmax">270 m</span></div>
 </div>
 
 <div id="tip"></div>
-<div id="hints">🖱 Drag · Scroll zoom · Right-drag pan</div>
+<div id="hints">🖱 Drag · Scroll · Right-pan</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-// ══════════════════════════════════════════════
-//  CONSTANTS
-// ══════════════════════════════════════════════
-const ZONA_ALTA_UTM=[
+// ── UTM17S → LatLon ──────────────────────────────────────────
+function u2ll(x,y){
+  const a=6378137,e2=0.00669438,k0=0.9996,lon0=-81*Math.PI/180;
+  const E=x-500000,N=y,M=N/k0;
+  const mu=M/(a*(1-e2/4-3*e2*e2/64));
+  const e1=(1-Math.sqrt(1-e2))/(1+Math.sqrt(1-e2));
+  const p1=mu+(3*e1/2-27*e1*e1*e1/32)*Math.sin(2*mu);
+  const p2=p1+(21*e1*e1/16)*Math.sin(4*mu);
+  const p3=p2+(151*e1*e1*e1/96)*Math.sin(6*mu);
+  const sinp=Math.sin(p3),cosp=Math.cos(p3),tanp=Math.tan(p3);
+  const N1=a/Math.sqrt(1-e2*sinp*sinp);
+  const T1=tanp*tanp,C1=e2/(1-e2)*cosp*cosp;
+  const R1=a*(1-e2)/Math.pow(1-e2*sinp*sinp,1.5);
+  const D=E/(N1*k0);
+  const lat=p3-(N1*tanp/R1)*(D*D/2-(5+3*T1+10*C1-4*C1*C1)*D*D*D*D/24);
+  const lon=lon0+(D-(1+2*T1+C1)*D*D*D/6)/cosp;
+  return [lat*180/Math.PI, lon*180/Math.PI];
+}
+
+// ── CONSTANTS ────────────────────────────────────────────────
+const ZA_UTM=[
   [593629,9679674],[593674,9679662],[593749,9679683],[593837,9679669],
   [593897,9679672],[593965,9679620],[593968,9679609],[593901,9679552],
   [593899,9679394],[593861,9679343],[593848,9679322],[593834,9679322],
@@ -219,361 +202,332 @@ const ZONA_ALTA_UTM=[
   [593937,9677931],[593564,9678879],[593513,9679102],[593555,9679320],
   [593580,9679572]
 ];
-
-// Simple UTM17S→LatLon approximation for Leaflet overlay
-function utmToLatLon(x,y){
-  const a=6378137,e2=0.00669438,k0=0.9996,lon0=-81;
-  const E=x-500000,N=y;
-  const M=N/k0;
-  const mu=M/(a*(1-e2/4-3*e2*e2/64));
-  const e1=(1-Math.sqrt(1-e2))/(1+Math.sqrt(1-e2));
-  const p1=mu+(3*e1/2-27*e1*e1*e1/32)*Math.sin(2*mu);
-  const p2=p1+(21*e1*e1/16-55*e1*e1*e1*e1/32)*Math.sin(4*mu);
-  const p3=p2+(151*e1*e1*e1/96)*Math.sin(6*mu);
-  const N1=a/Math.sqrt(1-e2*Math.sin(p3)*Math.sin(p3));
-  const T1=Math.tan(p3)*Math.tan(p3);
-  const C1=e2/(1-e2)*Math.cos(p3)*Math.cos(p3);
-  const R1=a*(1-e2)/Math.pow(1-e2*Math.sin(p3)*Math.sin(p3),1.5);
-  const D=E/(N1*k0);
-  const lat=p3-(N1*Math.tan(p3)/R1)*(D*D/2-(5+3*T1+10*C1-4*C1*C1-9*e2/(1-e2))*D*D*D*D/24);
-  const lon=lon0*Math.PI/180+(D-(1+2*T1+C1)*D*D*D/6)/Math.cos(p3);
-  return [lat*180/Math.PI, lon*180/Math.PI];
-}
-
-const ZONA_ALTA_LL = ZONA_ALTA_UTM.map(([x,y])=>utmToLatLon(x,y));
-const CENTER_LL = [-2.907, -80.146];
+const ZA_LL = ZA_UTM.map(([x,y])=>u2ll(x,y));
 
 const UTM_W=588000,UTM_E=602000,UTM_S=9675000,UTM_N=9681500;
 const TW=200,TH=170;
 
-// ══════════════════════════════════════════════
-//  STATE
-// ══════════════════════════════════════════════
-let allLayers={}, currentKey='dem';
-let terrainMesh, wireMesh, zaLine, tGeo;
-let rotX=0.5,rotY=0,panX=0,panY=0,camZoom=1;
-let dragging=false,rightDrag=false,px=0,py=0;
-let view='3d';
-let leafMap=null, leafOverlay=null, leafZA=null;
-let osmTile=null, satTile=null;
-
-// ══════════════════════════════════════════════
-//  COLORMAPS
-// ══════════════════════════════════════════════
+const LAYERS={
+  dem:      {file:'layer_dem.png',      name:'DEM – Elevation',    grad:'linear-gradient(90deg,#440154,#21908c,#fde725,#ff8c00,#fff)',min:'0 m',max:'270 m'},
+  ndvi:     {file:'layer_ndvi.png',     name:'NDVI – Vegetation',  grad:'linear-gradient(90deg,#D7191C,#FFFFBF,#1A9641)',min:'-0.4',max:'0.9'},
+  ndwi:     {file:'layer_ndwi.png',     name:'NDWI – Water',       grad:'linear-gradient(90deg,#D73027,#FFFFBF,#2166AC)',min:'-0.85',max:'0.56'},
+  mndwi:    {file:'layer_mndwi.png',    name:'MNDWI – Turbid Water',grad:'linear-gradient(90deg,#D73027,#FFFFBF,#2166AC)',min:'-0.72',max:'0.63'},
+  ndti:     {file:'layer_ndti.png',     name:'NDTI – Turbidity',   grad:'linear-gradient(90deg,#2C7BB6,#FFFFBF,#A6611A)',min:'-0.45',max:'0.21'},
+  hillshade:{file:'layer_hillshade.png',name:'Hillshade',           grad:'linear-gradient(90deg,#000,#888,#fff)',min:'0',max:'255'},
+};
 const CMAPS={
   dem:      [[68,1,84],[59,82,139],[33,145,140],[94,201,98],[253,231,37],[255,140,0],[255,255,255]],
   ndvi:     [[215,25,28],[255,255,145],[26,150,65]],
   ndwi:     [[215,48,39],[255,255,191],[33,102,172]],
   mndwi:    [[215,48,39],[255,255,191],[33,102,172]],
   ndti:     [[44,123,182],[255,255,191],[166,97,26]],
-  hillshade:[[0,0,0],[128,128,128],[255,255,255]]
-};
-const LEG={
-  dem:     {grad:'linear-gradient(90deg,#440154,#21908c,#fde725,#ff8c00,#fff)',min:'0 m',max:'270 m'},
-  ndvi:    {grad:'linear-gradient(90deg,#D7191C,#FFFFBF,#1A9641)',min:'-0.4',max:'0.9'},
-  ndwi:    {grad:'linear-gradient(90deg,#D73027,#FFFFBF,#2166AC)',min:'-0.85',max:'0.56'},
-  mndwi:   {grad:'linear-gradient(90deg,#D73027,#FFFFBF,#2166AC)',min:'-0.72',max:'0.63'},
-  ndti:    {grad:'linear-gradient(90deg,#2C7BB6,#FFFFBF,#A6611A)',min:'-0.45',max:'0.21'},
-  hillshade:{grad:'linear-gradient(90deg,#000,#888,#fff)',min:'0',max:'255'}
+  hillshade:[[0,0,0],[128,128,128],[255,255,255]],
 };
 const UNITS={dem:'m',ndvi:'',ndwi:'',mndwi:'',ndti:'',hillshade:''};
 
-function getColor(t,key){
+// ── STATE ────────────────────────────────────────────────────
+let demData=null, allLayers={}, curKey='dem';
+let tGeo=null, terrMesh=null, wireMesh=null, zaLine=null;
+let ctLines=[], contourData=null;
+let rotX=0.5,rotY=0,panX=0,panY=0,czoom=1;
+let dragging=false,rDrag=false,px=0,py=0;
+let curView='3d';
+let leafMap=null, leafOver=null, leafZA=null, leafCT=null;
+let leafOSM=null, leafSat=null, curBM='osm';
+// Per-layer texture cache for 3D drape
+const texCache={};
+
+// ── THREE ────────────────────────────────────────────────────
+const canvas=document.getElementById('canvas');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+renderer.setSize(window.innerWidth,window.innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x0d1020);
+scene.fog=new THREE.FogExp2(0x0d1020,0.0013);
+const camera=new THREE.PerspectiveCamera(55,innerWidth/innerHeight,0.1,2000);
+camera.position.set(0,80,130);camera.lookAt(0,0,0);
+const amb=new THREE.AmbientLight(0x3a4a66,1.0);scene.add(amb);
+const sun=new THREE.DirectionalLight(0xfff5e0,1.4);
+sun.position.set(-60,120,60);sun.castShadow=true;scene.add(sun);
+
+// ── Colormap helper ──────────────────────────────────────────
+function gc(t,key){
   const c=CMAPS[key]||CMAPS.dem;
   t=Math.max(0,Math.min(1,isNaN(t)?0:t));
   const i=t*(c.length-1),lo=Math.floor(i),hi=Math.min(Math.ceil(i),c.length-1),f=i-lo;
   return new THREE.Color((c[lo][0]+(c[hi][0]-c[lo][0])*f)/255,(c[lo][1]+(c[hi][1]-c[lo][1])*f)/255,(c[lo][2]+(c[hi][2]-c[lo][2])*f)/255);
 }
 
-// ══════════════════════════════════════════════
-//  THREE.JS
-// ══════════════════════════════════════════════
-const canvas=document.getElementById('canvas');
-const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
-renderer.setSize(window.innerWidth,window.innerHeight);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
-renderer.shadowMap.enabled=true;
-
-const scene=new THREE.Scene();
-scene.background=new THREE.Color(0x0d1020);
-scene.fog=new THREE.FogExp2(0x0d1020,0.0014);
-
-const camera=new THREE.PerspectiveCamera(55,window.innerWidth/window.innerHeight,0.1,2000);
-camera.position.set(0,80,130);camera.lookAt(0,0,0);
-
-const amb=new THREE.AmbientLight(0x3a4a66,1.0); scene.add(amb);
-const sun=new THREE.DirectionalLight(0xfff5e0,1.4);
-sun.position.set(-60,120,60);sun.castShadow=true; scene.add(sun);
-
-// ── Build terrain ────────────────────────────
+// ── Terrain ──────────────────────────────────────────────────
 function buildTerrain(key,vs){
-  const ld=allLayers[key]||allLayers.dem;
+  const ld=allLayers[key];
   const dem=allLayers.dem;
+  if(!ld||!dem) return;
   const {rows,cols,min,max}=ld;
-
   if(!tGeo){
     tGeo=new THREE.PlaneGeometry(TW,TH,cols-1,rows-1);
     tGeo.rotateX(-Math.PI/2);
   }
   const pos=tGeo.attributes.position.array;
   const colors=[];
-
   for(let r=0;r<rows;r++){
     for(let c=0;c<cols;c++){
       const vi=(r*cols+c)*3;
-      // FIX: clamp DEM to ≥0 so ocean/nodata doesn't spike downward
-      const elev=Math.max(0, dem.data[r] ? dem.data[r][c]||0 : 0);
+      const elev=Math.max(0,(dem.data[r]&&dem.data[r][c])||0);
       pos[vi+1]=elev/dem.max*vs*20;
-      const raw=ld.data[r]?ld.data[r][c]||0:0;
+      const raw=(ld.data[r]&&ld.data[r][c])||0;
       const t=(raw-min)/(max-min);
-      const col=getColor(t,key);
+      const col=gc(t,key);
       colors.push(col.r,col.g,col.b);
     }
   }
   tGeo.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));
   tGeo.attributes.position.needsUpdate=true;
   tGeo.computeVertexNormals();
-
-  if(!terrainMesh){
+  if(!terrMesh){
     const mat=new THREE.MeshPhongMaterial({vertexColors:true,shininess:12});
-    terrainMesh=new THREE.Mesh(tGeo,mat);
-    terrainMesh.receiveShadow=true;
-    scene.add(terrainMesh);
+    terrMesh=new THREE.Mesh(tGeo,mat);terrMesh.receiveShadow=true;scene.add(terrMesh);
     const wm=new THREE.MeshBasicMaterial({color:0x2a3a55,wireframe:true,opacity:0.1,transparent:true});
-    wireMesh=new THREE.Mesh(tGeo,wm);
-    wireMesh.visible=false;scene.add(wireMesh);
+    wireMesh=new THREE.Mesh(tGeo,wm);wireMesh.visible=false;scene.add(wireMesh);
   }
   updateLegend(key);
 }
 
 function updateLegend(key){
-  const l=LEG[key]; if(!l) return;
-  document.getElementById('leg-bar').style.background=l.grad;
-  document.getElementById('leg-min').textContent=l.min;
-  document.getElementById('leg-max').textContent=l.max;
-  document.getElementById('leg-title').textContent=
-    document.querySelector(`.lbtn[data-k="${key}"]`).textContent.trim();
+  const l=LAYERS[key];if(!l)return;
+  document.getElementById('lt').textContent=l.name;
+  document.getElementById('lbar').style.background=l.grad;
+  document.getElementById('lmin').textContent=l.min;
+  document.getElementById('lmax').textContent=l.max;
 }
 
-// ── Zona Alta line ───────────────────────────
-function buildZA(){
-  const dem=allLayers.dem;
+// ── Zona Alta 3D ─────────────────────────────────────────────
+function buildZA3D(){
+  const dem=allLayers.dem; if(!dem) return;
   const vs=parseFloat(document.getElementById('vs').value);
   const pts=[];
-  ZONA_ALTA_UTM.forEach(([ux,uy])=>{
-    const nx_=(ux-UTM_W)/(UTM_E-UTM_W);
-    const ny_=(uy-UTM_S)/(UTM_N-UTM_S);
-    const tx=(nx_-0.5)*TW, tz=(ny_-0.5)*TH;
-    const ci=Math.round(nx_*(dem.cols-1));
-    const ri=Math.round((1-ny_)*(dem.rows-1));
+  ZA_UTM.forEach(([ux,uy])=>{
+    const nx=(ux-UTM_W)/(UTM_E-UTM_W), ny=(uy-UTM_S)/(UTM_N-UTM_S);
+    const tx=(nx-0.5)*TW, tz=(ny-0.5)*TH;
+    const ci=Math.round(nx*(dem.cols-1)), ri=Math.round((1-ny)*(dem.rows-1));
     const elev=Math.max(0,(ri>=0&&ri<dem.rows&&ci>=0&&ci<dem.cols)?dem.data[ri][ci]:5);
-    pts.push(tx, elev/dem.max*vs*20+2.5, -tz);
+    pts.push(tx,elev/dem.max*vs*20+2.5,-tz);
   });
   pts.push(pts[0],pts[1],pts[2]);
   const geo=new THREE.BufferGeometry();
   geo.setAttribute('position',new THREE.Float32BufferAttribute(pts,3));
   if(zaLine){scene.remove(zaLine);}
   zaLine=new THREE.Line(geo,new THREE.LineBasicMaterial({color:0x00ff88,linewidth:2}));
-  scene.add(zaLine);
   zaLine.visible=document.getElementById('togZA').checked;
+  scene.add(zaLine);
 }
 
-// ── Raycaster / hover ────────────────────────
-const ray=new THREE.Raycaster();
-const mpos=new THREE.Vector2();
-const tip=document.getElementById('tip');
+// ── Contours 3D ──────────────────────────────────────────────
+function buildCT3D(){
+  ctLines.forEach(l=>scene.remove(l)); ctLines=[];
+  if(!contourData||!allLayers.dem) return;
+  if(!document.getElementById('togCT').checked) return;
+  const dem=allLayers.dem;
+  const vs=parseFloat(document.getElementById('vs').value);
+  contourData.features.forEach(f=>{
+    const pts3=[];
+    f.pts.forEach(([ux,uy])=>{
+      const nx=(ux-UTM_W)/(UTM_E-UTM_W), ny=(uy-UTM_S)/(UTM_N-UTM_S);
+      const tx=(nx-0.5)*TW, tz=(ny-0.5)*TH;
+      const ci=Math.round(nx*(dem.cols-1)), ri=Math.round((1-ny)*(dem.rows-1));
+      const elev=Math.max(0,(ri>=0&&ri<dem.rows&&ci>=0&&ci<dem.cols)?dem.data[ri][ci]:5);
+      pts3.push(tx,elev/dem.max*vs*20+0.8,-tz);
+    });
+    const geo=new THREE.BufferGeometry();
+    geo.setAttribute('position',new THREE.Float32BufferAttribute(pts3,3));
+    const col=f.e>100?0xffaa00:0x886644;
+    const line=new THREE.Line(geo,new THREE.LineBasicMaterial({color:col,opacity:0.5,transparent:true}));
+    ctLines.push(line); scene.add(line);
+  });
+}
 
+// ── Raycaster / hover ────────────────────────────────────────
+const ray=new THREE.Raycaster(), mv=new THREE.Vector2();
+const tip=document.getElementById('tip');
 canvas.addEventListener('mousemove',e=>{
   if(dragging){return;}
-  mpos.x=(e.clientX/window.innerWidth)*2-1;
-  mpos.y=-(e.clientY/window.innerHeight)*2+1;
-  ray.setFromCamera(mpos,camera);
-  if(!terrainMesh){tip.classList.remove('show');return;}
-  const hits=ray.intersectObject(terrainMesh);
+  mv.x=(e.clientX/innerWidth)*2-1; mv.y=-(e.clientY/innerHeight)*2+1;
+  ray.setFromCamera(mv,camera);
+  if(!terrMesh){tip.classList.remove('show');return;}
+  const hits=ray.intersectObject(terrMesh);
   if(hits.length){
     const pt=hits[0].point;
-    const nx_=pt.x/TW+0.5, ny_=-pt.z/TH+0.5;
+    const nx=pt.x/TW+0.5, ny=-pt.z/TH+0.5;
     const dem=allLayers.dem;
-    const ci=Math.round(nx_*(dem.cols-1));
-    const ri=Math.round((1-ny_)*(dem.rows-1));
-    let elevTxt='–',layTxt='';
+    const ci=Math.round(nx*(dem.cols-1)), ri=Math.round((1-ny)*(dem.rows-1));
+    let eTxt='–', lTxt='';
     if(ri>=0&&ri<dem.rows&&ci>=0&&ci<dem.cols){
-      elevTxt=Math.max(0,dem.data[ri][ci]).toFixed(1)+' m';
-      const ld=allLayers[currentKey];
+      eTxt=Math.max(0,dem.data[ri][ci]).toFixed(1)+' m';
+      const ld=allLayers[curKey];
       if(ld&&ri<ld.rows&&ci<ld.cols){
         const v=ld.data[ri][ci];
-        const u=UNITS[currentKey];
-        layTxt=` │ ${ld.name}: ${v.toFixed(3)}${u}`;
+        lTxt=` │ ${LAYERS[curKey].name.split(' – ')[0]}: ${v.toFixed(3)}${UNITS[curKey]}`;
       }
     }
-    const utmX=Math.round(nx_*(UTM_E-UTM_W)+UTM_W);
-    const utmY=Math.round(ny_*(UTM_N-UTM_S)+UTM_S);
-    tip.textContent=`📍 ${utmX}E  ${utmY}N │ Elev: ${elevTxt}${layTxt}`;
+    const utmX=Math.round(nx*(UTM_E-UTM_W)+UTM_W);
+    const utmY=Math.round(ny*(UTM_N-UTM_S)+UTM_S);
+    tip.textContent=`📍 ${utmX}E  ${utmY}N │ Elev: ${eTxt}${lTxt}`;
     tip.classList.add('show');
-  } else { tip.classList.remove('show'); }
+  } else tip.classList.remove('show');
 });
 canvas.addEventListener('mouseleave',()=>tip.classList.remove('show'));
 
-// ── Orbit ────────────────────────────────────
-canvas.addEventListener('mousedown',e=>{dragging=true;rightDrag=e.button===2;px=e.clientX;py=e.clientY;canvas.classList.add('dragging');});
+// ── Orbit ────────────────────────────────────────────────────
+canvas.addEventListener('mousedown',e=>{dragging=true;rDrag=e.button===2;px=e.clientX;py=e.clientY;canvas.classList.add('drag');});
 canvas.addEventListener('contextmenu',e=>e.preventDefault());
 window.addEventListener('mousemove',e=>{
   if(!dragging)return;
   const dx=(e.clientX-px)*0.005,dy=(e.clientY-py)*0.005;
-  if(rightDrag){panX+=dx*60;panY-=dy*60;}
+  if(rDrag){panX+=dx*60;panY-=dy*60;}
   else{rotY+=dx;rotX+=dy;rotX=Math.max(-0.05,Math.min(1.3,rotX));}
-  updateCompass(); px=e.clientX;py=e.clientY;
+  upC(); px=e.clientX;py=e.clientY;
 });
-window.addEventListener('mouseup',()=>{dragging=false;canvas.classList.remove('dragging');});
-canvas.addEventListener('wheel',e=>{camZoom*=e.deltaY>0?1.08:0.93;camZoom=Math.max(0.15,Math.min(6,camZoom));});
+window.addEventListener('mouseup',()=>{dragging=false;canvas.classList.remove('drag');});
+canvas.addEventListener('wheel',e=>{czoom*=e.deltaY>0?1.08:0.93;czoom=Math.max(0.15,Math.min(6,czoom));});
 
 function animate(){
   requestAnimationFrame(animate);
-  const r=150*camZoom;
+  const r=150*czoom;
   camera.position.set(Math.sin(rotY)*Math.cos(rotX)*r+panX,Math.sin(rotX)*r+8,Math.cos(rotY)*Math.cos(rotX)*r+panY);
   camera.lookAt(panX,0,panY);
   renderer.render(scene,camera);
 }
 
-// ══════════════════════════════════════════════
-//  2D LEAFLET MAP
-// ══════════════════════════════════════════════
-function initLeaflet(){
-  if(leafMap) return;
-  leafMap=L.map('map',{center:CENTER_LL,zoom:13});
-  osmTile=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    {attribution:'© OSM',maxZoom:19}).addTo(leafMap);
-  satTile=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    {attribution:'© Esri',maxZoom:19});
-
-  // Zona Alta polygon
-  leafZA=L.polygon(ZONA_ALTA_LL,{color:'#00ff88',weight:2,fillOpacity:0.1,fillColor:'#00ff88'})
-    .bindPopup('<b>Zona Alta</b><br>183.86 ha')
+// ── 2D Leaflet ───────────────────────────────────────────────
+function initLeaf(){
+  if(leafMap)return;
+  leafMap=L.map('map',{center:[-2.907,-80.146],zoom:13});
+  const SW=u2ll(UTM_W,UTM_S), NE=u2ll(UTM_E,UTM_N);
+  const bounds=[SW,NE];
+  leafOSM=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM',maxZoom:19});
+  leafSat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{attribution:'© Esri',maxZoom:19});
+  // Apply current basemap
+  if(curBM==='osm') leafOSM.addTo(leafMap);
+  else if(curBM==='sat') leafSat.addTo(leafMap);
+  // Zona Alta
+  leafZA=L.polygon(ZA_LL,{color:'#00ff88',weight:2.5,fillOpacity:0.08,fillColor:'#00ff88'})
+    .bindPopup('<b>Zona Alta</b><br>183.86 ha · Vivar Cerezo')
     .addTo(leafMap);
-
-  // Add canvas overlay for active layer
-  updateLeafletOverlay();
+  leafZA.setStyle({opacity:document.getElementById('togZA').checked?1:0,fillOpacity:document.getElementById('togZA').checked?0.08:0});
+  // Layer overlay as static PNG (no CORS issues)
+  leafOver=L.imageOverlay(LAYERS[curKey].file, bounds, {opacity:0.75}).addTo(leafMap);
+  // Contours in 2D
+  if(contourData && document.getElementById('togCT').checked) drawLeafContours();
 }
 
-function updateLeafletOverlay(){
-  if(!leafMap) return;
-  if(leafOverlay){leafMap.removeLayer(leafOverlay);}
-  const ld=allLayers[currentKey]; if(!ld) return;
-  // Build colored canvas
-  const cvs=document.createElement('canvas');
-  cvs.width=ld.cols; cvs.height=ld.rows;
-  const ctx=cvs.getContext('2d');
-  const img=ctx.createImageData(ld.cols,ld.rows);
-  for(let r=0;r<ld.rows;r++){
-    for(let c=0;c<ld.cols;c++){
-      const v=ld.data[r][c];
-      const t=(v-ld.min)/(ld.max-ld.min);
-      const col=getColor(t,currentKey);
-      const i=(r*ld.cols+c)*4;
-      img.data[i]=Math.round(col.r*255);
-      img.data[i+1]=Math.round(col.g*255);
-      img.data[i+2]=Math.round(col.b*255);
-      img.data[i+3]=180;
-    }
-  }
-  ctx.putImageData(img,0,0);
-  const url=cvs.toDataURL();
-  // Bounds: convert UTM corners to LatLon
-  const sw=utmToLatLon(UTM_W,UTM_S), ne=utmToLatLon(UTM_E,UTM_N);
-  leafOverlay=L.imageOverlay(url,[sw,ne],{opacity:0.75}).addTo(leafMap);
+function drawLeafContours(){
+  if(leafCT){leafMap.removeLayer(leafCT);}
+  if(!contourData)return;
+  const lls=[];
+  contourData.features.forEach(f=>{
+    lls.push({type:'Feature',geometry:{type:'LineString',coordinates:f.pts.map(([x,y])=>{const ll=u2ll(x,y);return[ll[1],ll[0]];})},properties:{e:f.e}});
+  });
+  leafCT=L.geoJSON({type:'FeatureCollection',features:lls},{
+    style:f=>({color:f.properties.e>100?'#aa6600':'#664422',weight:0.8,opacity:0.6})
+  }).addTo(leafMap);
 }
 
-// ══════════════════════════════════════════════
-//  UI CALLBACKS
-// ══════════════════════════════════════════════
-function switchView(v){
-  view=v;
+function updateLeafOver(){
+  if(!leafMap)return;
+  if(leafOver)leafMap.removeLayer(leafOver);
+  const SW=u2ll(UTM_W,UTM_S), NE=u2ll(UTM_E,UTM_N);
+  leafOver=L.imageOverlay(LAYERS[curKey].file,[SW,NE],{opacity:0.75}).addTo(leafMap);
+}
+
+// ── UI CALLBACKS ─────────────────────────────────────────────
+function setView(v){
+  curView=v;
   document.getElementById('view3d').style.display=v==='3d'?'block':'none';
   document.getElementById('view2d').style.display=v==='2d'?'block':'none';
   document.getElementById('compass').style.display=v==='3d'?'flex':'none';
   document.getElementById('hints').style.display=v==='3d'?'block':'none';
-  document.getElementById('sec-3d').style.display=v==='3d'?'block':'none';
-  document.getElementById('btn3d').classList.toggle('active',v==='3d');
-  document.getElementById('btn2d').classList.toggle('active',v==='2d');
-  if(v==='2d'){initLeaflet();setTimeout(()=>leafMap.invalidateSize(),100);}
+  document.getElementById('s3d').style.display=v==='3d'?'block':'none';
+  document.getElementById('b3d').classList.toggle('on',v==='3d');
+  document.getElementById('b2d').classList.toggle('on',v==='2d');
+  if(v==='2d'){initLeaf();setTimeout(()=>leafMap.invalidateSize(),120);}
 }
 
 function setLayer(key,btn){
-  currentKey=key;
-  document.querySelectorAll('.lbtn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
+  curKey=key;
+  document.querySelectorAll('.lb').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
   const vs=parseFloat(document.getElementById('vs').value);
   buildTerrain(key,vs);
-  if(view==='2d') updateLeafletOverlay();
+  if(curView==='2d') updateLeafOver();
 }
 
-function onVScale(v){
-  document.getElementById('vsVal').textContent=v+'×';
-  buildTerrain(currentKey,parseFloat(v));
-  buildZA();
-}
-function onLight(v){const a=parseFloat(v)*Math.PI/180;sun.position.set(Math.cos(a)*80,120,Math.sin(a)*80);}
-function onOpacity(v){if(terrainMesh){terrainMesh.material.opacity=parseFloat(v);terrainMesh.material.transparent=parseFloat(v)<1;}}
-function toggleWF(on){if(wireMesh)wireMesh.visible=on;}
-function toggleZonaAlta(on){
-  if(zaLine)zaLine.visible=on;
-  if(leafZA){if(on)leafZA.addTo(leafMap);else leafMap.removeLayer(leafZA);}
-}
-
-function onBasemapChange(){
-  const on=document.getElementById('togOSM').checked;
-  if(!osmTile||!leafMap)return;
-  if(on)osmTile.addTo(leafMap); else leafMap.removeLayer(osmTile);
-}
-function onSatChange(){
-  if(!leafMap){initLeaflet();}
-  const on=document.getElementById('togSat').checked;
-  if(on){
-    if(osmTile)leafMap.removeLayer(osmTile);
-    document.getElementById('togOSM').checked=false;
-    satTile.addTo(leafMap);
-  } else {
-    leafMap.removeLayer(satTile);
-    document.getElementById('togOSM').checked=true;
-    osmTile.addTo(leafMap);
+function setBM(val){
+  curBM=val;
+  // Update radio label highlights
+  document.querySelectorAll('.bm-opt').forEach(el=>{
+    el.classList.toggle('sel', el.querySelector('input').value===val);
+  });
+  // 3D: no tile texture (CORS blocks it) — basemap only works in 2D
+  if(leafMap){
+    [leafOSM,leafSat].forEach(t=>{if(t&&leafMap.hasLayer(t))leafMap.removeLayer(t);});
+    if(val==='osm'&&leafOSM) leafOSM.addTo(leafMap);
+    else if(val==='sat'&&leafSat) leafSat.addTo(leafMap);
   }
 }
 
-function togglePanel(){
-  const p=document.getElementById('panel');
-  const t=document.getElementById('ptoggle');
-  p.classList.toggle('collapsed');
-  t.textContent=p.classList.contains('collapsed')?'›':'‹';
-  t.style.left=p.classList.contains('collapsed')?'0':'250px';
-  document.getElementById('legend').style.left=p.classList.contains('collapsed')?'10px':'260px';
-  if(view==='2d'&&leafMap)setTimeout(()=>leafMap.invalidateSize(),350);
+function toggleZA(on){
+  if(zaLine) zaLine.visible=on;
+  if(leafZA) leafZA.setStyle({opacity:on?1:0,fillOpacity:on?0.08:0});
 }
 
-// ── Compass ──────────────────────────────────
-function updateCompass(){document.getElementById('cSvg').style.transform=`rotate(${rotY*180/Math.PI}deg)`;}
-function resetNorth(){rotY=0;rotX=0.5;updateCompass();}
+function toggleCT(on){
+  ctLines.forEach(l=>l.visible=on);
+  if(curView==='2d'&&leafMap){
+    if(on){if(!leafCT)drawLeafContours();else leafCT.addTo(leafMap);}
+    else if(leafCT)leafMap.removeLayer(leafCT);
+  }
+}
 
-// ── Resize ───────────────────────────────────
+function onVS(v){
+  document.getElementById('vsv').textContent=v+'×';
+  buildTerrain(curKey,parseFloat(v));
+  buildZA3D(); buildCT3D();
+}
+function onLA(v){const a=parseFloat(v)*Math.PI/180;sun.position.set(Math.cos(a)*80,120,Math.sin(a)*80);}
+function onOP(v){if(terrMesh){terrMesh.material.opacity=parseFloat(v);terrMesh.material.transparent=parseFloat(v)<1;}}
+function toggleWF(on){if(wireMesh)wireMesh.visible=on;}
+function togglePanel(){
+  const p=document.getElementById('panel'),t=document.getElementById('ptog');
+  p.classList.toggle('off');
+  t.textContent=p.classList.contains('off')?'›':'‹';
+  t.style.left=p.classList.contains('off')?'0':'256px';
+  document.getElementById('legend').style.left=p.classList.contains('off')?'10px':'266px';
+  if(leafMap)setTimeout(()=>leafMap.invalidateSize(),350);
+}
+function upC(){document.getElementById('cSvg').style.transform=`rotate(${rotY*180/Math.PI}deg)`;}
+function resetNorth(){rotY=0;rotX=0.5;upC();}
+
 window.addEventListener('resize',()=>{
-  camera.aspect=window.innerWidth/window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth,window.innerHeight);
+  camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth,innerHeight);
   if(leafMap)leafMap.invalidateSize();
 });
 
-// ══════════════════════════════════════════════
-//  INIT
-// ══════════════════════════════════════════════
-fetch('layers_data.json').then(r=>r.json()).then(data=>{
-  allLayers=data;
+// ── INIT ─────────────────────────────────────────────────────
+Promise.all([
+  fetch('layers_data.json').then(r=>r.json()),
+  fetch('contours.json').then(r=>r.json()).catch(()=>null)
+]).then(([layers, contours])=>{
+  allLayers=layers;
+  contourData=contours;
   buildTerrain('dem',5);
-  buildZA();
+  buildZA3D();
   animate();
-}).catch(e=>{
-  console.error(e);
+}).catch(()=>{
   fetch('dem_data.json').then(r=>r.json()).then(dem=>{
     allLayers={dem:{...dem,name:'DEM (m)',min:0,max:270}};
-    buildTerrain('dem',5); buildZA(); animate();
+    buildTerrain('dem',5); buildZA3D(); animate();
   });
 });
 </script>
