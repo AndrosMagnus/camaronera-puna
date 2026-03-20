@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Isla Puná – Terrain v1.3 | Camaronera Puna</title>
+<title>Isla Puná – Terrain v1.4 | Camaronera Puna</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -13,10 +13,10 @@ body{background:#0d1020;font-family:'Segoe UI',sans-serif;overflow:hidden;color:
 #canvas{width:100%;height:100%;display:block;cursor:grab}
 #canvas.drag{cursor:grabbing}
 
-/* PANEL */
 #panel{position:fixed;top:0;left:0;height:100vh;width:256px;background:rgba(7,9,22,0.97);
   border-right:1px solid rgba(100,160,255,0.18);display:flex;flex-direction:column;
-  z-index:500;overflow-y:auto;transition:transform .3s;scrollbar-width:thin;scrollbar-color:#1a2540 transparent}
+  z-index:500;overflow-y:auto;transition:transform .3s;
+  scrollbar-width:thin;scrollbar-color:#1a2540 transparent}
 #panel.off{transform:translateX(-256px)}
 #ptog{position:fixed;top:50%;left:256px;transform:translateY(-50%);width:18px;height:46px;
   background:rgba(100,160,255,0.18);border:1px solid rgba(100,160,255,0.28);border-left:none;
@@ -30,19 +30,17 @@ body{background:#0d1020;font-family:'Segoe UI',sans-serif;overflow:hidden;color:
 .sec{padding:9px 14px;border-bottom:1px solid rgba(100,160,255,0.08)}
 .st{font-size:10px;color:#38485a;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
 
-/* View tabs */
 .vtabs{display:flex;gap:6px}
 .vt{flex:1;padding:7px 0;border-radius:6px;border:1px solid rgba(100,160,255,0.18);
   background:rgba(255,255,255,0.03);cursor:pointer;font-size:12px;color:#7799bb;
   text-align:center;transition:all .18s}
 .vt.on{background:rgba(100,160,255,0.2);border-color:#7eb8ff;color:#fff}
 
-/* Basemap radio */
-.bm-opt{display:flex;align-items:center;gap:8px;padding:5px 0;cursor:pointer;font-size:12px;color:#8899bb}
+.bm-opt{display:flex;align-items:center;gap:8px;padding:5px 0;cursor:pointer;
+  font-size:12px;color:#607080}
 .bm-opt input[type=radio]{accent-color:#7eb8ff;width:13px;height:13px;cursor:pointer}
 .bm-opt.sel{color:#c8d8f0}
 
-/* Layer buttons */
 .lb{display:flex;align-items:center;gap:8px;width:100%;padding:6px 10px;
   background:rgba(255,255,255,0.03);border:1px solid rgba(100,160,255,0.1);
   border-radius:6px;cursor:pointer;margin-bottom:4px;color:#9ab0c8;font-size:12px;
@@ -51,8 +49,8 @@ body{background:#0d1020;font-family:'Segoe UI',sans-serif;overflow:hidden;color:
 .lb.on{background:rgba(100,160,255,0.17);border-color:#7eb8ff;color:#fff}
 .ld{width:10px;height:10px;border-radius:2px;flex-shrink:0}
 
-/* Toggle switch */
-.row{display:flex;align-items:center;justify-content:space-between;margin:5px 0;font-size:11px;color:#607080}
+.row{display:flex;align-items:center;justify-content:space-between;margin:5px 0;
+  font-size:11px;color:#607080}
 input[type=range]{width:88px;accent-color:#7eb8ff;cursor:pointer}
 .sw{position:relative;width:32px;height:17px;flex-shrink:0;cursor:pointer}
 .sw input{opacity:0;width:0;height:0;position:absolute}
@@ -63,15 +61,23 @@ input[type=range]{width:88px;accent-color:#7eb8ff;cursor:pointer}
 .sw input:checked+.sl{background:rgba(100,160,255,0.26)}
 .sw input:checked+.sl:before{transform:translateX(15px);background:#7eb8ff}
 
-/* Compass */
-#compass{position:fixed;bottom:68px;right:18px;width:50px;height:50px;
-  background:rgba(7,9,22,0.92);border:1px solid rgba(100,160,255,0.28);
-  border-radius:50%;cursor:pointer;z-index:400;display:flex;align-items:center;
-  justify-content:center}
-#compass:hover{border-color:#7eb8ff}
-#cSvg{width:34px;height:34px;transition:transform .35s ease}
+/* NAV CONTROLS */
+#nav{position:fixed;bottom:16px;right:16px;display:flex;flex-direction:column;
+  align-items:center;gap:4px;z-index:400}
+.nav-btn{width:36px;height:36px;background:rgba(7,9,22,0.92);
+  border:1px solid rgba(100,160,255,0.28);border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;color:#7eb8ff;font-size:14px;user-select:none;
+  transition:all .15s}
+.nav-btn:hover{background:rgba(100,160,255,0.2);border-color:#7eb8ff}
+.nav-row{display:flex;gap:4px}
+#compass-btn{width:36px;height:36px;background:rgba(7,9,22,0.92);
+  border:1px solid rgba(100,160,255,0.28);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;margin-bottom:2px}
+#compass-btn:hover{border-color:#7eb8ff}
+#cSvg{width:28px;height:28px;transition:transform .35s ease}
 
-/* Legend */
 #legend{position:fixed;bottom:16px;left:266px;z-index:400;
   background:rgba(7,9,22,0.92);border:1px solid rgba(100,160,255,0.18);
   border-radius:8px;padding:8px 12px;min-width:180px}
@@ -79,13 +85,11 @@ input[type=range]{width:88px;accent-color:#7eb8ff;cursor:pointer}
 .lb-lbl{display:flex;justify-content:space-between;font-size:9px;color:#445566}
 #lt{font-size:10px;color:#7eb8ff;margin-bottom:1px}
 
-/* Tooltip */
-#tip{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);
+#tip{position:fixed;top:16px;left:50%;transform:translateX(-50%);
   background:rgba(7,9,22,0.96);border:1px solid rgba(100,160,255,0.32);
   border-radius:8px;padding:6px 15px;font-size:12px;color:#aaccff;
   pointer-events:none;opacity:0;transition:opacity .15s;white-space:nowrap;z-index:600}
 #tip.show{opacity:1}
-#hints{position:fixed;bottom:16px;right:76px;font-size:10px;color:#232d3a;line-height:2}
 </style>
 </head>
 <body>
@@ -105,10 +109,10 @@ input[type=range]{width:88px;accent-color:#7eb8ff;cursor:pointer}
   </div>
 
   <div class="sec">
-    <div class="st">Base Map</div>
+    <div class="st">Base Map <span style="font-size:9px;color:#334">(2D only)</span></div>
     <label class="bm-opt sel"><input type="radio" name="bm" value="osm"  checked onchange="setBM('osm')"> OpenStreetMap</label>
-    <label class="bm-opt">     <input type="radio" name="bm" value="sat"        onchange="setBM('sat')"> Satellite (ESRI)</label>
-    <label class="bm-opt">     <input type="radio" name="bm" value="none"       onchange="setBM('none')"> None</label>
+    <label class="bm-opt">   <input type="radio" name="bm" value="sat"         onchange="setBM('sat')"> Satellite (ESRI)</label>
+    <label class="bm-opt">   <input type="radio" name="bm" value="none"        onchange="setBM('none')"> None</label>
   </div>
 
   <div class="sec">
@@ -123,8 +127,8 @@ input[type=range]{width:88px;accent-color:#7eb8ff;cursor:pointer}
 
   <div class="sec">
     <div class="st">Vectors</div>
-    <label class="row">Zona Alta   <label class="sw"><input type="checkbox" id="togZA" checked onchange="toggleZA(this.checked)"><span class="sl"></span></label></label>
-    <label class="row">Contours 10m<label class="sw"><input type="checkbox" id="togCT" onchange="toggleCT(this.checked)"><span class="sl"></span></label></label>
+    <label class="row">Zona Alta    <label class="sw"><input type="checkbox" id="togZA" checked onchange="toggleZA(this.checked)"><span class="sl"></span></label></label>
+    <label class="row">Contours 10m <label class="sw"><input type="checkbox" id="togCT" onchange="toggleCT(this.checked)"><span class="sl"></span></label></label>
   </div>
 
   <div class="sec" id="s3d">
@@ -141,16 +145,34 @@ input[type=range]{width:88px;accent-color:#7eb8ff;cursor:pointer}
 </div>
 <div id="ptog" onclick="togglePanel()">‹</div>
 
-<div id="compass" title="Reset North" onclick="resetNorth()">
-  <svg id="cSvg" viewBox="0 0 34 34">
-    <circle cx="17" cy="17" r="15" fill="none" stroke="rgba(100,160,255,0.22)" stroke-width="1"/>
-    <polygon points="17,3 20,17 17,13 14,17" fill="#d04040"/>
-    <polygon points="17,31 20,17 17,21 14,17" fill="#556677"/>
-    <text x="17" y="7.5" text-anchor="middle" font-size="5" fill="#d04040" font-weight="bold">N</text>
-    <text x="17" y="31"  text-anchor="middle" font-size="5" fill="#556677">S</text>
-    <text x="3"  y="19"  text-anchor="middle" font-size="5" fill="#556677">W</text>
-    <text x="31" y="19"  text-anchor="middle" font-size="5" fill="#556677">E</text>
-  </svg>
+<!-- NAV CONTROLS (bottom-right) -->
+<div id="nav">
+  <div id="compass-btn" title="Face North" onclick="faceNorth()">
+    <svg id="cSvg" viewBox="0 0 28 28">
+      <circle cx="14" cy="14" r="12" fill="none" stroke="rgba(100,160,255,0.25)" stroke-width="1"/>
+      <polygon points="14,2 17,14 14,10 11,14" fill="#d04040"/>
+      <polygon points="14,26 17,14 14,18 11,14" fill="#556677"/>
+      <text x="14" y="6"  text-anchor="middle" font-size="4.5" fill="#d04040" font-weight="bold">N</text>
+      <text x="14" y="26" text-anchor="middle" font-size="4.5" fill="#556677">S</text>
+      <text x="2"  y="15.5" text-anchor="middle" font-size="4.5" fill="#556677">W</text>
+      <text x="26" y="15.5" text-anchor="middle" font-size="4.5" fill="#556677">E</text>
+    </svg>
+  </div>
+  <div class="nav-row">
+    <div class="nav-btn" title="Rotate Left"  onclick="rotateBy(-0.15,0)">↺</div>
+    <div class="nav-btn" title="Tilt Up"      onclick="tiltBy(-0.1)">▲</div>
+    <div class="nav-btn" title="Rotate Right" onclick="rotateBy(0.15,0)">↻</div>
+  </div>
+  <div class="nav-row">
+    <div class="nav-btn" title="Pan Left"  onclick="panBy(-10,0)">◀</div>
+    <div class="nav-btn" title="Tilt Down" onclick="tiltBy(0.1)">▼</div>
+    <div class="nav-btn" title="Pan Right" onclick="panBy(10,0)">▶</div>
+  </div>
+  <div class="nav-row">
+    <div class="nav-btn" title="Zoom In"  onclick="zoomBy(0.85)">+</div>
+    <div class="nav-btn" title="Reset"    onclick="resetView()" style="font-size:10px">⌂</div>
+    <div class="nav-btn" title="Zoom Out" onclick="zoomBy(1.15)">−</div>
+  </div>
 </div>
 
 <div id="legend">
@@ -160,7 +182,6 @@ input[type=range]{width:88px;accent-color:#7eb8ff;cursor:pointer}
 </div>
 
 <div id="tip"></div>
-<div id="hints">🖱 Drag · Scroll · Right-pan</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -181,77 +202,56 @@ function u2ll(x,y){
   const D=E/(N1*k0);
   const lat=p3-(N1*tanp/R1)*(D*D/2-(5+3*T1+10*C1-4*C1*C1)*D*D*D*D/24);
   const lon=lon0+(D-(1+2*T1+C1)*D*D*D/6)/cosp;
-  return [lat*180/Math.PI, lon*180/Math.PI];
+  return [lat*180/Math.PI,lon*180/Math.PI];
 }
 
-// ── CONSTANTS ────────────────────────────────────────────────
-const ZA_UTM=[
-  [593629,9679674],[593674,9679662],[593749,9679683],[593837,9679669],
-  [593897,9679672],[593965,9679620],[593968,9679609],[593901,9679552],
-  [593899,9679394],[593861,9679343],[593848,9679322],[593834,9679322],
-  [593813,9679327],[593790,9679354],[593767,9679394],[593763,9679471],
-  [593778,9679498],[593794,9679513],[593823,9679528],[593851,9679538],
-  [593877,9679541],[593929,9679409],[593982,9679422],[594018,9679441],
-  [594022,9679429],[594005,9679328],[594024,9679291],[594036,9679287],
-  [594043,9679218],[594050,9679188],[594057,9679186],[594069,9679191],
-  [594083,9679210],[594103,9679234],[594667,9678629],[594695,9678482],
-  [594775,9678256],[594956,9677943],[594977,9677800],[594871,9677569],
-  [594835,9677433],[594855,9677365],[594746,9677253],[594778,9677174],
-  [594768,9677103],[594785,9676974],[594547,9677203],[594356,9677200],
-  [594243,9677260],[594277,9677638],[594169,9677755],[594124,9677836],
-  [593937,9677931],[593564,9678879],[593513,9679102],[593555,9679320],
-  [593580,9679572]
-];
-const ZA_LL = ZA_UTM.map(([x,y])=>u2ll(x,y));
+const ZA_UTM=[[593629,9679674],[593674,9679662],[593749,9679683],[593837,9679669],[593897,9679672],[593965,9679620],[593968,9679609],[593901,9679552],[593899,9679394],[593861,9679343],[593848,9679322],[593834,9679322],[593813,9679327],[593790,9679354],[593767,9679394],[593763,9679471],[593778,9679498],[593794,9679513],[593823,9679528],[593851,9679538],[593877,9679541],[593929,9679409],[593982,9679422],[594018,9679441],[594022,9679429],[594005,9679328],[594024,9679291],[594036,9679287],[594043,9679218],[594050,9679188],[594057,9679186],[594069,9679191],[594083,9679210],[594103,9679234],[594667,9678629],[594695,9678482],[594775,9678256],[594956,9677943],[594977,9677800],[594871,9677569],[594835,9677433],[594855,9677365],[594746,9677253],[594778,9677174],[594768,9677103],[594785,9676974],[594547,9677203],[594356,9677200],[594243,9677260],[594277,9677638],[594169,9677755],[594124,9677836],[593937,9677931],[593564,9678879],[593513,9679102],[593555,9679320],[593580,9679572]];
+const ZA_LL=ZA_UTM.map(([x,y])=>u2ll(x,y));
 
 const UTM_W=588000,UTM_E=602000,UTM_S=9675000,UTM_N=9681500;
 const TW=200,TH=170;
 
-const LAYERS={
-  dem:      {file:'layer_dem.png',      name:'DEM – Elevation',    grad:'linear-gradient(90deg,#440154,#21908c,#fde725,#ff8c00,#fff)',min:'0 m',max:'270 m'},
-  ndvi:     {file:'layer_ndvi.png',     name:'NDVI – Vegetation',  grad:'linear-gradient(90deg,#D7191C,#FFFFBF,#1A9641)',min:'-0.4',max:'0.9'},
-  ndwi:     {file:'layer_ndwi.png',     name:'NDWI – Water',       grad:'linear-gradient(90deg,#D73027,#FFFFBF,#2166AC)',min:'-0.85',max:'0.56'},
-  mndwi:    {file:'layer_mndwi.png',    name:'MNDWI – Turbid Water',grad:'linear-gradient(90deg,#D73027,#FFFFBF,#2166AC)',min:'-0.72',max:'0.63'},
-  ndti:     {file:'layer_ndti.png',     name:'NDTI – Turbidity',   grad:'linear-gradient(90deg,#2C7BB6,#FFFFBF,#A6611A)',min:'-0.45',max:'0.21'},
-  hillshade:{file:'layer_hillshade.png',name:'Hillshade',           grad:'linear-gradient(90deg,#000,#888,#fff)',min:'0',max:'255'},
+const LINFO={
+  dem:      {file:'layer_dem.png',      name:'DEM – Elevation',     grad:'linear-gradient(90deg,#440154,#21908c,#fde725,#ff8c00,#fff)',min:'0 m',   max:'270 m'},
+  ndvi:     {file:'layer_ndvi.png',     name:'NDVI – Vegetation',   grad:'linear-gradient(90deg,#D7191C,#FFFFBF,#1A9641)',             min:'-0.4',  max:'0.9'},
+  ndwi:     {file:'layer_ndwi.png',     name:'NDWI – Water',        grad:'linear-gradient(90deg,#D73027,#FFFFBF,#2166AC)',             min:'-0.85', max:'0.56'},
+  mndwi:    {file:'layer_mndwi.png',    name:'MNDWI – Turbid Water',grad:'linear-gradient(90deg,#D73027,#FFFFBF,#2166AC)',             min:'-0.72', max:'0.63'},
+  ndti:     {file:'layer_ndti.png',     name:'NDTI – Turbidity',    grad:'linear-gradient(90deg,#2C7BB6,#FFFFBF,#A6611A)',             min:'-0.45', max:'0.21'},
+  hillshade:{file:'layer_hillshade.png',name:'Hillshade',            grad:'linear-gradient(90deg,#000,#888,#fff)',                      min:'0',     max:'255'},
 };
 const CMAPS={
-  dem:      [[68,1,84],[59,82,139],[33,145,140],[94,201,98],[253,231,37],[255,140,0],[255,255,255]],
-  ndvi:     [[215,25,28],[255,255,145],[26,150,65]],
-  ndwi:     [[215,48,39],[255,255,191],[33,102,172]],
-  mndwi:    [[215,48,39],[255,255,191],[33,102,172]],
-  ndti:     [[44,123,182],[255,255,191],[166,97,26]],
-  hillshade:[[0,0,0],[128,128,128],[255,255,255]],
+  dem:[[68,1,84],[59,82,139],[33,145,140],[94,201,98],[253,231,37],[255,140,0],[255,255,255]],
+  ndvi:[[215,25,28],[255,255,145],[26,150,65]],
+  ndwi:[[215,48,39],[255,255,191],[33,102,172]],
+  mndwi:[[215,48,39],[255,255,191],[33,102,172]],
+  ndti:[[44,123,182],[255,255,191],[166,97,26]],
+  hillshade:[[0,0,0],[128,128,128],[255,255,255]]
 };
 const UNITS={dem:'m',ndvi:'',ndwi:'',mndwi:'',ndti:'',hillshade:''};
 
-// ── STATE ────────────────────────────────────────────────────
-let demData=null, allLayers={}, curKey='dem';
-let tGeo=null, terrMesh=null, wireMesh=null, zaLine=null;
-let ctLines=[], contourData=null;
-let rotX=0.5,rotY=0,panX=0,panY=0,czoom=1;
-let dragging=false,rDrag=false,px=0,py=0;
+// ── STATE ─────────────────────────────────────────────────────
+let allLayers={}, curKey='dem', contourData=null, ready=false;
+let tGeo=null, terrMesh=null, wireMesh=null, zaLine=null, ctLines=[];
+let rotX=0.5, rotY=0, panX=0, panY=0, czoom=1;
+let dragging=false, rDrag=false, px=0, py=0;
 let curView='3d';
 let leafMap=null, leafOver=null, leafZA=null, leafCT=null;
 let leafOSM=null, leafSat=null, curBM='osm';
-// Per-layer texture cache for 3D drape
-const texCache={};
 
-// ── THREE ────────────────────────────────────────────────────
+// ── THREE ─────────────────────────────────────────────────────
 const canvas=document.getElementById('canvas');
 const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
-renderer.setSize(window.innerWidth,window.innerHeight);
+renderer.setSize(innerWidth,innerHeight);
 renderer.setPixelRatio(Math.min(devicePixelRatio,2));
 const scene=new THREE.Scene();
 scene.background=new THREE.Color(0x0d1020);
 scene.fog=new THREE.FogExp2(0x0d1020,0.0013);
 const camera=new THREE.PerspectiveCamera(55,innerWidth/innerHeight,0.1,2000);
-camera.position.set(0,80,130);camera.lookAt(0,0,0);
-const amb=new THREE.AmbientLight(0x3a4a66,1.0);scene.add(amb);
+camera.position.set(0,80,130); camera.lookAt(0,0,0);
+const amb=new THREE.AmbientLight(0x3a4a66,1.0); scene.add(amb);
 const sun=new THREE.DirectionalLight(0xfff5e0,1.4);
-sun.position.set(-60,120,60);sun.castShadow=true;scene.add(sun);
+sun.position.set(-60,120,60); scene.add(sun);
 
-// ── Colormap helper ──────────────────────────────────────────
 function gc(t,key){
   const c=CMAPS[key]||CMAPS.dem;
   t=Math.max(0,Math.min(1,isNaN(t)?0:t));
@@ -259,10 +259,8 @@ function gc(t,key){
   return new THREE.Color((c[lo][0]+(c[hi][0]-c[lo][0])*f)/255,(c[lo][1]+(c[hi][1]-c[lo][1])*f)/255,(c[lo][2]+(c[hi][2]-c[lo][2])*f)/255);
 }
 
-// ── Terrain ──────────────────────────────────────────────────
 function buildTerrain(key,vs){
-  const ld=allLayers[key];
-  const dem=allLayers.dem;
+  const ld=allLayers[key], dem=allLayers.dem;
   if(!ld||!dem) return;
   const {rows,cols,min,max}=ld;
   if(!tGeo){
@@ -287,71 +285,65 @@ function buildTerrain(key,vs){
   tGeo.computeVertexNormals();
   if(!terrMesh){
     const mat=new THREE.MeshPhongMaterial({vertexColors:true,shininess:12});
-    terrMesh=new THREE.Mesh(tGeo,mat);terrMesh.receiveShadow=true;scene.add(terrMesh);
+    terrMesh=new THREE.Mesh(tGeo,mat); terrMesh.receiveShadow=true; scene.add(terrMesh);
     const wm=new THREE.MeshBasicMaterial({color:0x2a3a55,wireframe:true,opacity:0.1,transparent:true});
-    wireMesh=new THREE.Mesh(tGeo,wm);wireMesh.visible=false;scene.add(wireMesh);
+    wireMesh=new THREE.Mesh(tGeo,wm); wireMesh.visible=false; scene.add(wireMesh);
   }
   updateLegend(key);
 }
 
 function updateLegend(key){
-  const l=LAYERS[key];if(!l)return;
+  const l=LINFO[key]; if(!l) return;
   document.getElementById('lt').textContent=l.name;
   document.getElementById('lbar').style.background=l.grad;
   document.getElementById('lmin').textContent=l.min;
   document.getElementById('lmax').textContent=l.max;
 }
 
-// ── Zona Alta 3D ─────────────────────────────────────────────
 function buildZA3D(){
   const dem=allLayers.dem; if(!dem) return;
   const vs=parseFloat(document.getElementById('vs').value);
   const pts=[];
   ZA_UTM.forEach(([ux,uy])=>{
-    const nx=(ux-UTM_W)/(UTM_E-UTM_W), ny=(uy-UTM_S)/(UTM_N-UTM_S);
-    const tx=(nx-0.5)*TW, tz=(ny-0.5)*TH;
-    const ci=Math.round(nx*(dem.cols-1)), ri=Math.round((1-ny)*(dem.rows-1));
+    const nx=(ux-UTM_W)/(UTM_E-UTM_W),ny=(uy-UTM_S)/(UTM_N-UTM_S);
+    const ci=Math.round(nx*(dem.cols-1)),ri=Math.round((1-ny)*(dem.rows-1));
     const elev=Math.max(0,(ri>=0&&ri<dem.rows&&ci>=0&&ci<dem.cols)?dem.data[ri][ci]:5);
-    pts.push(tx,elev/dem.max*vs*20+2.5,-tz);
+    pts.push((nx-0.5)*TW, elev/dem.max*vs*20+2.5, -(ny-0.5)*TH);
   });
   pts.push(pts[0],pts[1],pts[2]);
   const geo=new THREE.BufferGeometry();
   geo.setAttribute('position',new THREE.Float32BufferAttribute(pts,3));
-  if(zaLine){scene.remove(zaLine);}
+  if(zaLine) scene.remove(zaLine);
   zaLine=new THREE.Line(geo,new THREE.LineBasicMaterial({color:0x00ff88,linewidth:2}));
   zaLine.visible=document.getElementById('togZA').checked;
   scene.add(zaLine);
 }
 
-// ── Contours 3D ──────────────────────────────────────────────
 function buildCT3D(){
   ctLines.forEach(l=>scene.remove(l)); ctLines=[];
-  if(!contourData||!allLayers.dem) return;
-  if(!document.getElementById('togCT').checked) return;
+  if(!contourData||!allLayers.dem||!document.getElementById('togCT').checked) return;
   const dem=allLayers.dem;
   const vs=parseFloat(document.getElementById('vs').value);
   contourData.features.forEach(f=>{
     const pts3=[];
     f.pts.forEach(([ux,uy])=>{
-      const nx=(ux-UTM_W)/(UTM_E-UTM_W), ny=(uy-UTM_S)/(UTM_N-UTM_S);
-      const tx=(nx-0.5)*TW, tz=(ny-0.5)*TH;
-      const ci=Math.round(nx*(dem.cols-1)), ri=Math.round((1-ny)*(dem.rows-1));
+      const nx=(ux-UTM_W)/(UTM_E-UTM_W),ny=(uy-UTM_S)/(UTM_N-UTM_S);
+      const ci=Math.round(nx*(dem.cols-1)),ri=Math.round((1-ny)*(dem.rows-1));
       const elev=Math.max(0,(ri>=0&&ri<dem.rows&&ci>=0&&ci<dem.cols)?dem.data[ri][ci]:5);
-      pts3.push(tx,elev/dem.max*vs*20+0.8,-tz);
+      pts3.push((nx-0.5)*TW, elev/dem.max*vs*20+0.8, -(ny-0.5)*TH);
     });
     const geo=new THREE.BufferGeometry();
     geo.setAttribute('position',new THREE.Float32BufferAttribute(pts3,3));
-    const col=f.e>100?0xffaa00:0x886644;
-    const line=new THREE.Line(geo,new THREE.LineBasicMaterial({color:col,opacity:0.5,transparent:true}));
+    const line=new THREE.Line(geo,new THREE.LineBasicMaterial({color:f.e>100?0xffaa00:0x886644,opacity:0.45,transparent:true}));
     ctLines.push(line); scene.add(line);
   });
 }
 
-// ── Raycaster / hover ────────────────────────────────────────
+// ── Raycaster ──────────────────────────────────────────────
 const ray=new THREE.Raycaster(), mv=new THREE.Vector2();
 const tip=document.getElementById('tip');
 canvas.addEventListener('mousemove',e=>{
-  if(dragging){return;}
+  if(dragging) return;
   mv.x=(e.clientX/innerWidth)*2-1; mv.y=-(e.clientY/innerHeight)*2+1;
   ray.setFromCamera(mv,camera);
   if(!terrMesh){tip.classList.remove('show');return;}
@@ -365,31 +357,49 @@ canvas.addEventListener('mousemove',e=>{
     if(ri>=0&&ri<dem.rows&&ci>=0&&ci<dem.cols){
       eTxt=Math.max(0,dem.data[ri][ci]).toFixed(1)+' m';
       const ld=allLayers[curKey];
-      if(ld&&ri<ld.rows&&ci<ld.cols){
-        const v=ld.data[ri][ci];
-        lTxt=` │ ${LAYERS[curKey].name.split(' – ')[0]}: ${v.toFixed(3)}${UNITS[curKey]}`;
-      }
+      if(ld&&ri<ld.rows&&ci<ld.cols) lTxt=` │ ${LINFO[curKey].name.split(' – ')[0]}: ${ld.data[ri][ci].toFixed(3)}${UNITS[curKey]}`;
     }
-    const utmX=Math.round(nx*(UTM_E-UTM_W)+UTM_W);
-    const utmY=Math.round(ny*(UTM_N-UTM_S)+UTM_S);
-    tip.textContent=`📍 ${utmX}E  ${utmY}N │ Elev: ${eTxt}${lTxt}`;
+    tip.textContent=`📍 ${Math.round(nx*(UTM_E-UTM_W)+UTM_W)}E  ${Math.round(ny*(UTM_N-UTM_S)+UTM_S)}N │ Elev: ${eTxt}${lTxt}`;
     tip.classList.add('show');
   } else tip.classList.remove('show');
 });
 canvas.addEventListener('mouseleave',()=>tip.classList.remove('show'));
 
-// ── Orbit ────────────────────────────────────────────────────
+// ── Orbit ──────────────────────────────────────────────────
 canvas.addEventListener('mousedown',e=>{dragging=true;rDrag=e.button===2;px=e.clientX;py=e.clientY;canvas.classList.add('drag');});
 canvas.addEventListener('contextmenu',e=>e.preventDefault());
 window.addEventListener('mousemove',e=>{
-  if(!dragging)return;
-  const dx=(e.clientX-px)*0.005,dy=(e.clientY-py)*0.005;
+  if(!dragging) return;
+  const dx=(e.clientX-px)*0.005, dy=(e.clientY-py)*0.005;
   if(rDrag){panX+=dx*60;panY-=dy*60;}
   else{rotY+=dx;rotX+=dy;rotX=Math.max(-0.05,Math.min(1.3,rotX));}
-  upC(); px=e.clientX;py=e.clientY;
+  upCompass(); px=e.clientX; py=e.clientY;
 });
 window.addEventListener('mouseup',()=>{dragging=false;canvas.classList.remove('drag');});
 canvas.addEventListener('wheel',e=>{czoom*=e.deltaY>0?1.08:0.93;czoom=Math.max(0.15,Math.min(6,czoom));});
+
+// ── Navigation buttons ─────────────────────────────────────
+function rotateBy(dY,dX){rotY+=dY;rotX=Math.max(-0.05,Math.min(1.3,rotX+dX));upCompass();}
+function tiltBy(d){rotX=Math.max(-0.05,Math.min(1.3,rotX+d));}
+function panBy(dx,dy){panX+=dx;panY+=dy;}
+function zoomBy(f){czoom=Math.max(0.15,Math.min(6,czoom*f));}
+function resetView(){rotX=0.5;rotY=0;panX=0;panY=0;czoom=1;upCompass();}
+function faceNorth(){
+  // Smoothly animate rotY to 0 (north-facing) without resetting tilt/zoom/pan
+  const target=0;
+  const start=rotY;
+  const dur=400;
+  const t0=performance.now();
+  function step(t){
+    const prog=Math.min((t-t0)/dur,1);
+    const ease=prog<0.5?2*prog*prog:1-Math.pow(-2*prog+2,2)/2;
+    rotY=start+(target-start)*ease;
+    upCompass();
+    if(prog<1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+function upCompass(){document.getElementById('cSvg').style.transform=`rotate(${rotY*180/Math.PI}deg)`;}
 
 function animate(){
   requestAnimationFrame(animate);
@@ -399,93 +409,100 @@ function animate(){
   renderer.render(scene,camera);
 }
 
-// ── 2D Leaflet ───────────────────────────────────────────────
+// ── 2D Leaflet ────────────────────────────────────────────
 function initLeaf(){
-  if(leafMap)return;
-  leafMap=L.map('map',{center:[-2.907,-80.146],zoom:13});
-  const SW=u2ll(UTM_W,UTM_S), NE=u2ll(UTM_E,UTM_N);
-  const bounds=[SW,NE];
-  leafOSM=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM',maxZoom:19});
-  leafSat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{attribution:'© Esri',maxZoom:19});
-  // Apply current basemap
+  if(leafMap) return;
+  leafMap=L.map('map',{center:[-2.907,-80.146],zoom:13,zoomControl:false});
+  L.control.zoom({position:'topright'}).addTo(leafMap);
+
+  leafOSM=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap',maxZoom:19});
+  leafSat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{attribution:'© Esri World Imagery',maxZoom:19});
+
+  // Apply current basemap choice
   if(curBM==='osm') leafOSM.addTo(leafMap);
   else if(curBM==='sat') leafSat.addTo(leafMap);
-  // Zona Alta
-  leafZA=L.polygon(ZA_LL,{color:'#00ff88',weight:2.5,fillOpacity:0.08,fillColor:'#00ff88'})
-    .bindPopup('<b>Zona Alta</b><br>183.86 ha · Vivar Cerezo')
-    .addTo(leafMap);
-  leafZA.setStyle({opacity:document.getElementById('togZA').checked?1:0,fillOpacity:document.getElementById('togZA').checked?0.08:0});
-  // Layer overlay as static PNG (no CORS issues)
-  leafOver=L.imageOverlay(LAYERS[curKey].file, bounds, {opacity:0.75}).addTo(leafMap);
-  // Contours in 2D
-  if(contourData && document.getElementById('togCT').checked) drawLeafContours();
+
+  // Zona Alta polygon
+  leafZA=L.polygon(ZA_LL,{color:'#00ff88',weight:2.5,fillOpacity:0.1,fillColor:'#00ff88'})
+    .bindPopup('<b>Zona Alta</b><br>183.86 ha · Vivar Cerezo');
+  if(document.getElementById('togZA').checked) leafZA.addTo(leafMap);
+
+  // Layer PNG overlay — bounds from UTM corners
+  const SW=u2ll(UTM_W,UTM_S), NE=u2ll(UTM_E,UTM_N);
+  const bounds=[SW,NE];
+  leafOver=L.imageOverlay(LINFO[curKey].file, bounds, {opacity:0.78, interactive:false});
+  leafOver.addTo(leafMap);
+
+  // Contours
+  if(contourData && document.getElementById('togCT').checked) buildLeafCT();
 }
 
-function drawLeafContours(){
+function buildLeafCT(){
   if(leafCT){leafMap.removeLayer(leafCT);}
-  if(!contourData)return;
-  const lls=[];
-  contourData.features.forEach(f=>{
-    lls.push({type:'Feature',geometry:{type:'LineString',coordinates:f.pts.map(([x,y])=>{const ll=u2ll(x,y);return[ll[1],ll[0]];})},properties:{e:f.e}});
-  });
-  leafCT=L.geoJSON({type:'FeatureCollection',features:lls},{
-    style:f=>({color:f.properties.e>100?'#aa6600':'#664422',weight:0.8,opacity:0.6})
-  }).addTo(leafMap);
+  if(!contourData||!leafMap) return;
+  const geojson={type:'FeatureCollection',features:contourData.features.map(f=>({
+    type:'Feature',
+    geometry:{type:'LineString',coordinates:f.pts.map(([x,y])=>{const ll=u2ll(x,y);return[ll[1],ll[0]];})},
+    properties:{e:f.e}
+  }))};
+  leafCT=L.geoJSON(geojson,{style:f=>({color:f.properties.e>100?'#cc8800':'#886633',weight:0.8,opacity:0.55})}).addTo(leafMap);
 }
 
 function updateLeafOver(){
-  if(!leafMap)return;
-  if(leafOver)leafMap.removeLayer(leafOver);
+  if(!leafMap||!leafOver) return;
   const SW=u2ll(UTM_W,UTM_S), NE=u2ll(UTM_E,UTM_N);
-  leafOver=L.imageOverlay(LAYERS[curKey].file,[SW,NE],{opacity:0.75}).addTo(leafMap);
+  leafMap.removeLayer(leafOver);
+  leafOver=L.imageOverlay(LINFO[curKey].file,[SW,NE],{opacity:0.78,interactive:false}).addTo(leafMap);
 }
 
-// ── UI CALLBACKS ─────────────────────────────────────────────
+// ── UI callbacks ──────────────────────────────────────────
 function setView(v){
   curView=v;
   document.getElementById('view3d').style.display=v==='3d'?'block':'none';
   document.getElementById('view2d').style.display=v==='2d'?'block':'none';
-  document.getElementById('compass').style.display=v==='3d'?'flex':'none';
-  document.getElementById('hints').style.display=v==='3d'?'block':'none';
+  document.getElementById('nav').style.display=v==='3d'?'flex':'none';
   document.getElementById('s3d').style.display=v==='3d'?'block':'none';
   document.getElementById('b3d').classList.toggle('on',v==='3d');
   document.getElementById('b2d').classList.toggle('on',v==='2d');
-  if(v==='2d'){initLeaf();setTimeout(()=>leafMap.invalidateSize(),120);}
+  if(v==='2d'){
+    // Always init or refresh Leaflet
+    if(!leafMap){ initLeaf(); }
+    setTimeout(()=>{
+      leafMap.invalidateSize();
+      // Force re-add overlay in case it wasn't added yet
+      if(leafOver && !leafMap.hasLayer(leafOver)) leafOver.addTo(leafMap);
+    },150);
+  }
 }
 
 function setLayer(key,btn){
   curKey=key;
   document.querySelectorAll('.lb').forEach(b=>b.classList.remove('on'));
   btn.classList.add('on');
-  const vs=parseFloat(document.getElementById('vs').value);
-  buildTerrain(key,vs);
-  if(curView==='2d') updateLeafOver();
+  buildTerrain(key,parseFloat(document.getElementById('vs').value));
+  if(curView==='2d'&&leafMap) updateLeafOver();
 }
 
 function setBM(val){
   curBM=val;
-  // Update radio label highlights
-  document.querySelectorAll('.bm-opt').forEach(el=>{
-    el.classList.toggle('sel', el.querySelector('input').value===val);
-  });
-  // 3D: no tile texture (CORS blocks it) — basemap only works in 2D
-  if(leafMap){
-    [leafOSM,leafSat].forEach(t=>{if(t&&leafMap.hasLayer(t))leafMap.removeLayer(t);});
-    if(val==='osm'&&leafOSM) leafOSM.addTo(leafMap);
-    else if(val==='sat'&&leafSat) leafSat.addTo(leafMap);
-  }
+  document.querySelectorAll('.bm-opt').forEach(el=>el.classList.toggle('sel',el.querySelector('input').value===val));
+  if(!leafMap) return;
+  if(leafOSM&&leafMap.hasLayer(leafOSM)) leafMap.removeLayer(leafOSM);
+  if(leafSat&&leafMap.hasLayer(leafSat)) leafMap.removeLayer(leafSat);
+  if(val==='osm') leafOSM.addTo(leafMap);
+  else if(val==='sat') leafSat.addTo(leafMap);
 }
 
 function toggleZA(on){
   if(zaLine) zaLine.visible=on;
-  if(leafZA) leafZA.setStyle({opacity:on?1:0,fillOpacity:on?0.08:0});
+  if(leafMap&&leafZA){if(on)leafZA.addTo(leafMap);else leafMap.removeLayer(leafZA);}
 }
 
 function toggleCT(on){
   ctLines.forEach(l=>l.visible=on);
   if(curView==='2d'&&leafMap){
-    if(on){if(!leafCT)drawLeafContours();else leafCT.addTo(leafMap);}
-    else if(leafCT)leafMap.removeLayer(leafCT);
+    if(on) buildLeafCT();
+    else if(leafCT) leafMap.removeLayer(leafCT);
   }
 }
 
@@ -503,30 +520,32 @@ function togglePanel(){
   t.textContent=p.classList.contains('off')?'›':'‹';
   t.style.left=p.classList.contains('off')?'0':'256px';
   document.getElementById('legend').style.left=p.classList.contains('off')?'10px':'266px';
-  if(leafMap)setTimeout(()=>leafMap.invalidateSize(),350);
+  if(leafMap) setTimeout(()=>leafMap.invalidateSize(),350);
 }
-function upC(){document.getElementById('cSvg').style.transform=`rotate(${rotY*180/Math.PI}deg)`;}
-function resetNorth(){rotY=0;rotX=0.5;upC();}
 
 window.addEventListener('resize',()=>{
-  camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();
+  camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix();
   renderer.setSize(innerWidth,innerHeight);
-  if(leafMap)leafMap.invalidateSize();
+  if(leafMap) leafMap.invalidateSize();
 });
 
-// ── INIT ─────────────────────────────────────────────────────
+// ── INIT — load data FIRST, then start everything ─────────
 Promise.all([
-  fetch('layers_data.json').then(r=>r.json()),
-  fetch('contours.json').then(r=>r.json()).catch(()=>null)
-]).then(([layers, contours])=>{
+  fetch('layers_data.json').then(r=>{if(!r.ok)throw new Error('layers_data '+r.status);return r.json();}),
+  fetch('contours.json').then(r=>r.ok?r.json():null).catch(()=>null)
+]).then(([layers,contours])=>{
   allLayers=layers;
   contourData=contours;
+  ready=true;
   buildTerrain('dem',5);
   buildZA3D();
   animate();
-}).catch(()=>{
+}).catch(err=>{
+  console.error('Data load error:',err);
+  // Fallback to dem_data.json only
   fetch('dem_data.json').then(r=>r.json()).then(dem=>{
     allLayers={dem:{...dem,name:'DEM (m)',min:0,max:270}};
+    ready=true;
     buildTerrain('dem',5); buildZA3D(); animate();
   });
 });
