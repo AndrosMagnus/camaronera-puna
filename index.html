@@ -70,7 +70,7 @@ input[type=range]{width:88px;accent-color:#7eb8ff}
     <label class="bo sel"><input type="radio" name="bm" value="osm" checked onchange="SBM('osm')"> OpenStreetMap</label>
     <label class="bo"><input type="radio" name="bm" value="sat" onchange="SBM('sat')"> Satellite (ESRI)</label>
     <label class="bo"><input type="radio" name="bm" value="none" onchange="SBM('none')"> None</label>
-    <div class="row" style="margin-top:8px">Overlay Opacity <div style="display:flex;align-items:center;gap:4px"><input type="range" id="ov2dOp" min="0" max="1" value="0.75" step="0.05" oninput="S2O(this.value)"><span id="ov2dOpVal" style="font-size:10px;color:#7eb8ff;min-width:28px">75%</span></div></div>
+    <div class="row" style="margin-top:8px">Overlay Opacity <div style="display:flex;align-items:center;gap:4px"><input type="range" id="ov2dOp" min="0" max="1" value="0.9" step="0.05" oninput="S2O(this.value)"><span id="ov2dOpVal" style="font-size:10px;color:#7eb8ff;min-width:28px">90%</span></div></div>
   </div>
   <div class="sec"><div class="st">Overlay Layers</div>
     <button class="lb on" data-k="dem" onclick="SL('dem',this)"><span class="ld" style="background:linear-gradient(90deg,#440154,#21908c,#fde725)"></span>DEM – Elevation</button>
@@ -110,6 +110,8 @@ var CM={dem:[[68,1,84],[59,82,139],[33,145,140],[94,201,98],[253,231,37],[255,14
 var UN={dem:"m",ndvi:"",ndwi:"",mndwi:"",ndti:"",hillshade:""};
 var ZA_U=[[593629,9679674],[593674,9679662],[593749,9679683],[593837,9679669],[593897,9679672],[593965,9679620],[593968,9679609],[593901,9679552],[593899,9679394],[593861,9679343],[593848,9679322],[593834,9679322],[593813,9679327],[593790,9679354],[593767,9679394],[593763,9679471],[593778,9679498],[593794,9679513],[593823,9679528],[593851,9679538],[593877,9679541],[593929,9679409],[593982,9679422],[594018,9679441],[594022,9679429],[594005,9679328],[594024,9679291],[594036,9679287],[594043,9679218],[594050,9679188],[594057,9679186],[594069,9679191],[594083,9679210],[594103,9679234],[594667,9678629],[594695,9678482],[594775,9678256],[594956,9677943],[594977,9677800],[594871,9677569],[594835,9677433],[594855,9677365],[594746,9677253],[594778,9677174],[594768,9677103],[594785,9676974],[594547,9677203],[594356,9677200],[594243,9677260],[594277,9677638],[594169,9677755],[594124,9677836],[593937,9677931],[593564,9678879],[593513,9679102],[593555,9679320],[593580,9679572]];
 var UW=585214,UE=604624,US=9670377,UN2=9686847,TW=200,TH=170;
+// WGS84 bounds (computed from UTM, used for 2D hover)
+var UW_DEG=-80.2332,UE_DEG=-80.0587,US_DEG=-2.9819,UN_DEG=-2.8328;
 function u2l(x,y){var a=6378137,e2=.00669438,k0=.9996,l0=-81*Math.PI/180,E=x-5e5,M=(y-10000000)/k0,mu=M/(a*(1-e2/4-3*e2*e2/64)),e1=(1-Math.sqrt(1-e2))/(1+Math.sqrt(1-e2)),p1=mu+(3*e1/2)*Math.sin(2*mu),p2=p1+(21*e1*e1/16)*Math.sin(4*mu),p3=p2+(151*e1*e1*e1/96)*Math.sin(6*mu),sp=Math.sin(p3),cp=Math.cos(p3),tp=Math.tan(p3),N1=a/Math.sqrt(1-e2*sp*sp),T1=tp*tp,R1=a*(1-e2)/Math.pow(1-e2*sp*sp,1.5),D=E/(N1*k0),lat=p3-(N1*tp/R1)*(D*D/2-(5+3*T1)*D*D*D*D/24),lon=l0+(D-(1+2*T1)*D*D*D/6)/cp;return[lat*180/Math.PI,lon*180/Math.PI];}
 var ZA_L=ZA_U.map(function(p){return u2l(p[0],p[1]);});
 var AL={},CK="dem",CD=null;
@@ -206,10 +208,32 @@ function OL(){
   LSAT=L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",{attribution:"© Esri",maxZoom:19});
   if(BM==="osm")LOSM.addTo(LM);else if(BM==="sat")LSAT.addTo(LM);
   var SW=u2l(UW,US),NE=u2l(UE,UN2);
-  LO=L.imageOverlay(LINFO[CK].f,[SW,NE],{opacity:parseFloat(document.getElementById('ov2dOp')?document.getElementById('ov2dOp').value:.9),interactive:false}).addTo(LM);
+  LO=L.imageOverlay(LINFO[CK].f,[SW,NE],{opacity:parseFloat(document.getElementById('ov2dOp').value||0.9),interactive:false}).addTo(LM);
   LZA=L.polygon(ZA_L,{color:"#00ff88",weight:2.5,fillOpacity:.1,fillColor:"#00ff88"}).bindPopup("<b>Zona Alta</b><br>183.86 ha");
   if(document.getElementById("tZA").checked)LZA.addTo(LM);
   if(CD&&document.getElementById("tCT").checked)BCT2();
+  // 2D hover: sample pixel value from layer data
+  LM.on('mousemove', function(e){
+    var tip=document.getElementById('tip');
+    if(!window.AL||!window.AL.dem){tip.classList.remove('show');return;}
+    var lat=e.latlng.lat, lng=e.latlng.lng;
+    // Convert latlng to UTM fraction
+    var nx=(lng-(window.UW_DEG||(-80.233)))/(window.UE_DEG-window.UW_DEG||0.175);
+    var ny=(lat-(window.US_DEG||(-2.982)))/(window.UN_DEG-window.US_DEG||0.149);
+    var dem=window.AL.dem;
+    var ci=Math.round(nx*(dem.cols-1));
+    var ri=Math.round((1-ny)*(dem.rows-1));
+    if(ci<0||ci>=dem.cols||ri<0||ri>=dem.rows){tip.classList.remove('show');return;}
+    var elev=Math.max(0,dem.data[ri][ci]).toFixed(1);
+    var ld=window.AL[window.CK];
+    var layVal='';
+    if(ld&&ri<ld.rows&&ci<ld.cols){
+      layVal=' | '+window.LINFO[window.CK].n.split(' – ')[0]+': '+ld.data[ri][ci].toFixed(3)+window.UN[window.CK];
+    }
+    tip.textContent='📍 Elev: '+elev+' m'+layVal;
+    tip.classList.add('show');
+  });
+  LM.on('mouseout',function(){document.getElementById('tip').classList.remove('show');});
   setTimeout(function(){LM.invalidateSize();},200);
 }
 function BCT2(){
@@ -217,7 +241,7 @@ function BCT2(){
   LCT=L.geoJSON({type:"FeatureCollection",features:CD.features.map(function(f){return{type:"Feature",geometry:{type:"LineString",coordinates:f.pts.map(function(p){var ll=u2l(p[0],p[1]);return[ll[1],ll[0]];})},properties:{e:f.e}};})},{style:function(f){return{color:f.properties.e>100?"#cc8800":"#886633",weight:.8,opacity:.55};}}).addTo(LM);
 }
 function SV(v){CV=v;document.getElementById("v3").style.display=v==="3d"?"block":"none";document.getElementById("v2").style.display=v==="2d"?"block":"none";document.getElementById("nav").style.display=v==="3d"?"flex":"none";document.getElementById("s3d").style.display=v==="3d"?"block":"none";document.getElementById("b3d").classList.toggle("on",v==="3d");document.getElementById("b2d").classList.toggle("on",v==="2d");if(v==="2d")OL();}
-function SL(k,btn){CK=k;document.querySelectorAll(".lb").forEach(function(b){b.classList.remove("on");});btn.classList.add("on");BT(k,parseFloat(document.getElementById("vs").value));if(CV==="2d"&&LM&&LO){var SW=u2l(UW,US),NE=u2l(UE,UN2);LM.removeLayer(LO);LO=L.imageOverlay(LINFO[k].f,[SW,NE],{opacity:parseFloat(document.getElementById('ov2dOp')?document.getElementById('ov2dOp').value:.9),interactive:false}).addTo(LM);}}
+function SL(k,btn){CK=k;document.querySelectorAll(".lb").forEach(function(b){b.classList.remove("on");});btn.classList.add("on");BT(k,parseFloat(document.getElementById("vs").value));if(CV==="2d"&&LM&&LO){var SW=u2l(UW,US),NE=u2l(UE,UN2);LM.removeLayer(LO);LO=L.imageOverlay(LINFO[k].f,[SW,NE],{opacity:parseFloat(document.getElementById('ov2dOp').value||0.9),interactive:false}).addTo(LM);}}
 function S2O(v){document.getElementById("ov2dOpVal").textContent=Math.round(v*100)+"%";if(window.LO)window.LO.setOpacity(parseFloat(v));}
 function SBM(v){BM=v;document.querySelectorAll(".bo").forEach(function(el){el.classList.toggle("sel",el.querySelector("input").value===v);});if(!LM)return;if(LOSM&&LM.hasLayer(LOSM))LM.removeLayer(LOSM);if(LSAT&&LM.hasLayer(LSAT))LM.removeLayer(LSAT);if(v==="osm")LOSM.addTo(LM);else if(v==="sat")LSAT.addTo(LM);}
 function TZA(on){if(ZL)ZL.visible=on;if(LM&&LZA){if(on)LZA.addTo(LM);else LM.removeLayer(LZA);}}
