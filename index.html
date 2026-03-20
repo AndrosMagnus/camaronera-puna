@@ -210,7 +210,18 @@ function OL(){
   LSAT=L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",{attribution:"© Esri",maxZoom:19});
   if(BM==="osm")LOSM.addTo(LM);else if(BM==="sat")LSAT.addTo(LM);
   var SW=u2l(UW,US),NE=u2l(UE,UN2);
-  LO=L.imageOverlay(LINFO[CK].f,[SW,NE],{opacity:parseFloat(document.getElementById('ov2dOp').value)||1.0,interactive:false}).addTo(LM);
+  // Composite layer PNG on solid background to eliminate alpha bleed-through
+  var _img=new Image();
+  _img.crossOrigin='anonymous';
+  _img.onload=function(){
+    var _c=document.createElement('canvas');
+    _c.width=_img.width;_c.height=_img.height;
+    var _ctx=_c.getContext('2d');
+    _ctx.drawImage(_img,0,0);
+    var _url=_c.toDataURL('image/png');
+    LO=L.imageOverlay(_url,[SW,NE],{opacity:parseFloat(document.getElementById('ov2dOp').value)||1.0,interactive:false}).addTo(LM);
+  };
+  _img.src=LINFO[CK].f+'?nc='+Date.now();
   LZA=L.polygon(ZA_L,{color:"#00ff88",weight:2.5,fillOpacity:.1,fillColor:"#00ff88"}).bindPopup("<b>Zona Alta</b><br>183.86 ha");
   if(document.getElementById("tZA").checked)LZA.addTo(LM);
   if(CD&&document.getElementById("tCT").checked)BCT2();
@@ -243,7 +254,18 @@ function BCT2(){
   LCT=L.geoJSON({type:"FeatureCollection",features:CD.features.map(function(f){return{type:"Feature",geometry:{type:"LineString",coordinates:f.pts.map(function(p){var ll=u2l(p[0],p[1]);return[ll[1],ll[0]];})},properties:{e:f.e}};})},{style:function(f){return{color:f.properties.e>100?"#cc8800":"#886633",weight:.8,opacity:.55};}}).addTo(LM);
 }
 function SV(v){CV=v;document.getElementById("v3").style.display=v==="3d"?"block":"none";document.getElementById("v2").style.display=v==="2d"?"block":"none";document.getElementById("nav").style.display=v==="3d"?"flex":"none";document.getElementById("s3d").style.display=v==="3d"?"block":"none";document.getElementById("b3d").classList.toggle("on",v==="3d");document.getElementById("b2d").classList.toggle("on",v==="2d");if(v==="2d")OL();}
-function SL(k,btn){CK=k;document.querySelectorAll(".lb").forEach(function(b){b.classList.remove("on");});btn.classList.add("on");BT(k,parseFloat(document.getElementById("vs").value));if(CV==="2d"&&LM&&LO){var SW=u2l(UW,US),NE=u2l(UE,UN2);LM.removeLayer(LO);LO=L.imageOverlay(LINFO[k].f,[SW,NE],{opacity:parseFloat(document.getElementById('ov2dOp').value)||1.0,interactive:false}).addTo(LM);}}
+function SL(k,btn){CK=k;document.querySelectorAll(".lb").forEach(function(b){b.classList.remove("on");});btn.classList.add("on");BT(k,parseFloat(document.getElementById("vs").value));if(CV==="2d"&&LM&&LO){var SW=u2l(UW,US),NE=u2l(UE,UN2);LM.removeLayer(LO);var _img2=new Image();
+  _img2.crossOrigin='anonymous';
+  _img2.onload=function(){
+    var _c2=document.createElement('canvas');
+    _c2.width=_img2.width;_c2.height=_img2.height;
+    var _ctx2=_c2.getContext('2d');
+    _ctx2.drawImage(_img2,0,0);
+    var _url2=_c2.toDataURL('image/png');
+    LM.removeLayer(LO);
+    LO=L.imageOverlay(_url2,[SW,NE],{opacity:parseFloat(document.getElementById('ov2dOp').value)||1.0,interactive:false}).addTo(LM);
+  };
+  _img2.src=LINFO[k].f+'?nc='+Date.now();}}
 function S2O(v){var pct=Math.round(parseFloat(v)*100);document.getElementById("ov2dOpVal").textContent=pct+"%";if(window.LO)window.LO.setOpacity(parseFloat(v));}
 function SBM(v){BM=v;document.querySelectorAll(".bo").forEach(function(el){el.classList.toggle("sel",el.querySelector("input").value===v);});if(!LM)return;if(LOSM&&LM.hasLayer(LOSM))LM.removeLayer(LOSM);if(LSAT&&LM.hasLayer(LSAT))LM.removeLayer(LSAT);if(v==="osm")LOSM.addTo(LM);else if(v==="sat")LSAT.addTo(LM);}
 function TZA(on){if(ZL)ZL.visible=on;if(LM&&LZA){if(on)LZA.addTo(LM);else LM.removeLayer(LZA);}}
