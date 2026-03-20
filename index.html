@@ -238,6 +238,7 @@ Promise.all([
   fetch("layers_data.json").then(function(r){return r.json();}),
   fetch("contours.json").then(function(r){return r.ok?r.json():null;}).catch(function(){return null;})
 ]).then(function(res){AL=res[0];CD=res[1];BT("dem",5);BZA();document.getElementById("load").style.display="none";}).catch(function(err){fetch("dem_data.json").then(function(r){return r.json();}).then(function(dem){AL={dem:Object.assign({},dem,{n:"DEM (m)",min:0,max:270})};BT("dem",5);BZA();document.getElementById("load").style.display="none";});});
+/* v=fix-utms */
 </script>
 </body>
 </html>
