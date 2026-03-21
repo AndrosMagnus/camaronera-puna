@@ -55,17 +55,6 @@ input[type=range]{width:88px;accent-color:#7eb8ff}
 .lbar{width:100%;height:11px;border-radius:3px;margin:4px 0}
 .llbl{display:flex;justify-content:space-between;font-size:9px;color:#445566}
 #lt{font-size:10px;color:#7eb8ff;margin-bottom:1px}
-/* Measurement tool */
-#meas-btn{position:fixed;top:16px;right:16px;width:36px;height:36px;background:rgba(7,9,22,.92);
-  border:1px solid rgba(100,160,255,.28);border-radius:8px;display:none;
-  align-items:center;justify-content:center;cursor:pointer;color:#7eb8ff;
-  font-size:16px;z-index:400;user-select:none;transition:all .15s}
-#meas-btn:hover{background:rgba(100,160,255,.2);border-color:#7eb8ff}
-#meas-btn.active{background:rgba(100,160,255,.3);border-color:#7eb8ff;color:#fff}
-#meas-result{position:fixed;bottom:60px;left:50%;transform:translateX(-50%);
-  background:rgba(7,9,22,.96);border:1px solid rgba(100,160,255,.4);
-  border-radius:8px;padding:8px 16px;font-size:12px;color:#aaccff;
-  z-index:600;display:none;white-space:nowrap;text-align:center}
 #tip{position:fixed;top:12px;left:50%;transform:translateX(-50%);background:rgba(7,9,22,.96);border:1px solid rgba(100,160,255,.32);border-radius:8px;padding:6px 15px;font-size:12px;color:#aaccff;pointer-events:none;opacity:0;transition:opacity .15s;white-space:nowrap;z-index:600}
 #tip.show{opacity:1}
 </style>
@@ -105,8 +94,6 @@ input[type=range]{width:88px;accent-color:#7eb8ff}
   <div class="sec" style="font-size:9px;color:#1e2a36;line-height:1.9">Sentinel-2 · 2025-09-25<br>Copernicus DEM GLO-30 · 30m<br>© ESA / Copernicus / OSM / Esri</div>
 </div>
 <div id="ptog" onclick="TP()">‹</div>
-<div id="meas-btn" title="Measure distance / area" onclick="toggleMeas()">📏</div>
-<div id="meas-result"></div>
 <div id="nav">
   <div id="cbtn" title="Face North" onclick="FN()">
     <svg id="cSvg" viewBox="0 0 28 28"><circle cx="14" cy="14" r="12" fill="none" stroke="rgba(100,160,255,.25)" stroke-width="1"/><polygon points="14,2 17,14 14,10 11,14" fill="#d04040"/><polygon points="14,26 17,14 14,18 11,14" fill="#556677"/><text x="14" y="6.5" text-anchor="middle" font-size="4.5" fill="#d04040" font-weight="bold">N</text><text x="14" y="26.5" text-anchor="middle" font-size="4.5" fill="#556677">S</text><text x="2" y="15.5" text-anchor="middle" font-size="4.5" fill="#556677">W</text><text x="26" y="15.5" text-anchor="middle" font-size="4.5" fill="#556677">E</text></svg>
@@ -119,11 +106,11 @@ input[type=range]{width:88px;accent-color:#7eb8ff}
 <div id="tip"></div>
 
 <script>
-var LINFO={dem:{f:"layer_dem.jpg",n:"DEM – Elevation",g:"linear-gradient(90deg,#440154,#21908c,#fde725,#ff8c00,#fff)",mn:"0 m",mx:"270 m"},ndvi:{f:"layer_ndvi.jpg",n:"NDVI – Vegetation",g:"linear-gradient(90deg,#D7191C,#FFFFBF,#1A9641)",mn:"-0.4",mx:"0.9"},ndwi:{f:"layer_ndwi.jpg",n:"NDWI – Water",g:"linear-gradient(90deg,#D73027,#FFFFBF,#2166AC)",mn:"-0.85",mx:"0.56"},mndwi:{f:"layer_mndwi.jpg",n:"MNDWI – Turbid Water",g:"linear-gradient(90deg,#D73027,#FFFFBF,#2166AC)",mn:"-0.72",mx:"0.63"},ndti:{f:"layer_ndti.jpg",n:"NDTI – Turbidity",g:"linear-gradient(90deg,#2C7BB6,#FFFFBF,#A6611A)",mn:"-0.45",mx:"0.21"},hillshade:{f:"layer_hillshade.jpg",n:"Hillshade",g:"linear-gradient(90deg,#000,#888,#fff)",mn:"0",mx:"255"},
-falsecolor:{f:"layer_falsecolor.jpg",n:"False Color NIR",g:"linear-gradient(90deg,#003,#f00,#ff0,#0f0)",mn:"B8-B4-B3",mx:"NIR"}};
+var LINFO={dem:{f:"layer_dem.png",n:"DEM – Elevation",g:"linear-gradient(90deg,#440154,#21908c,#fde725,#ff8c00,#fff)",mn:"0 m",mx:"270 m"},ndvi:{f:"layer_ndvi.png",n:"NDVI – Vegetation",g:"linear-gradient(90deg,#D7191C,#FFFFBF,#1A9641)",mn:"-0.4",mx:"0.9"},ndwi:{f:"layer_ndwi.png",n:"NDWI – Water",g:"linear-gradient(90deg,#D73027,#FFFFBF,#2166AC)",mn:"-0.85",mx:"0.56"},mndwi:{f:"layer_mndwi.png",n:"MNDWI – Turbid Water",g:"linear-gradient(90deg,#D73027,#FFFFBF,#2166AC)",mn:"-0.72",mx:"0.63"},ndti:{f:"layer_ndti.png",n:"NDTI – Turbidity",g:"linear-gradient(90deg,#2C7BB6,#FFFFBF,#A6611A)",mn:"-0.45",mx:"0.21"},hillshade:{f:"layer_hillshade.png",n:"Hillshade",g:"linear-gradient(90deg,#000,#888,#fff)",mn:"0",mx:"255"},
+falsecolor:{f:"layer_falsecolor.png",n:"False Color NIR",g:"linear-gradient(90deg,#003,#f00,#ff0,#0f0)",mn:"B8-B4-B3",mx:"NIR"}};
 var CM={dem:[[68,1,84],[59,82,139],[33,145,140],[94,201,98],[253,231,37],[255,140,0],[255,255,255]],ndvi:[[215,25,28],[255,255,145],[26,150,65]],ndwi:[[215,48,39],[255,255,191],[33,102,172]],mndwi:[[215,48,39],[255,255,191],[33,102,172]],ndti:[[44,123,182],[255,255,191],[166,97,26]],hillshade:[[0,0,0],[128,128,128],[255,255,255]]};
 var UN={dem:"m",ndvi:"",ndwi:"",mndwi:"",ndti:"",hillshade:""};
-var ZA_U=[[593629,9679674],[593674,9679662],[593749,9679683],[593837,9679669],[593897,9679672],[593965,9679620],[593968,9679609],[593901,9679552],[593899,9679394],[593861,9679343],[593848,9679322],[593834,9679322],[593813,9679327],[593790,9679354],[593767,9679394],[593763,9679471],[593778,9679498],[593794,9679513],[593823,9679528],[593851,9679538],[593877,9679541],[593929,9679409],[593982,9679422],[594018,9679441],[594022,9679429],[594005,9679328],[594024,9679291],[594036,9679287],[594043,9679218],[594050,9679188],[594057,9679186],[594069,9679191],[594083,9679210],[594103,9679234],[594667,9678629],[594695,9678482],[594775,9678256],[594956,9677943],[594977,9677800],[594871,9677569],[594835,9677433],[594855,9677365],[594746,9677253],[594778,9677174],[594768,9677103],[594785,9676974],[594547,9677203],[594356,9677200],[594243,9677260],[594277,9677638],[594169,9677755],[594124,9677836],[593937,9677931],[593564,9678879],[593513,9679102],[593555,9679320],[593580,9679572]];
+var ZA_U=[[593629,9679674],[593674,9679662],[593749,9679683],[593837,9679669],[593897,9679672],[593965,9679620],[593968,9679609],[593901,9679552],[593877,9679541],[593851,9679538],[593823,9679528],[593794,9679513],[593778,9679498],[593763,9679471],[593767,9679394],[593790,9679354],[593813,9679327],[593834,9679322],[593848,9679322],[593861,9679343],[593899,9679394],[593929,9679409],[593982,9679422],[594018,9679441],[594022,9679429],[594005,9679328],[594024,9679291],[594036,9679287],[594043,9679218],[594050,9679188],[594057,9679186],[594069,9679191],[594083,9679210],[594103,9679234],[594667,9678629],[594695,9678482],[594775,9678256],[594956,9677943],[594977,9677800],[594871,9677569],[594835,9677433],[594855,9677365],[594746,9677253],[594778,9677174],[594778,9677174],[594768,9677103],[594785,9676974],[594547,9677203],[594356,9677200],[594243,9677260],[594277,9677638],[594169,9677755],[594124,9677836],[593937,9677931],[593564,9678879],[593513,9679102],[593555,9679320],[593580,9679572]];
 var UW=585214,UE=604624,US=9670377,UN2=9686847,TW=200,TH=170;
 // WGS84 bounds (computed from UTM, used for 2D hover)
 var UW_DEG=-80.2332,UE_DEG=-80.0587,US_DEG=-2.9819,UN_DEG=-2.8328;
@@ -223,7 +210,7 @@ function OL(){
   LSAT=L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",{attribution:"© Esri",maxZoom:19});
   if(BM==="osm")LOSM.addTo(LM);else if(BM==="sat")LSAT.addTo(LM);
   var SW=u2l(UW,US),NE=u2l(UE,UN2);
-  LO=L.imageOverlay(LINFO[CK].f+'?nc='+Date.now(),[SW,NE],{opacity:parseFloat(document.getElementById('ov2dOp').value)||1.0,interactive:false}).addTo(LM);
+  LO=L.imageOverlay(LINFO[CK].f,[SW,NE],{opacity:parseFloat(document.getElementById('ov2dOp').value)||1.0,interactive:false}).addTo(LM);
   LZA=L.polygon(ZA_L,{color:"#00ff88",weight:2.5,fillOpacity:.1,fillColor:"#00ff88"}).bindPopup("<b>Zona Alta</b><br>183.86 ha");
   if(document.getElementById("tZA").checked)LZA.addTo(LM);
   if(CD&&document.getElementById("tCT").checked)BCT2();
@@ -256,7 +243,7 @@ function BCT2(){
   LCT=L.geoJSON({type:"FeatureCollection",features:CD.features.map(function(f){return{type:"Feature",geometry:{type:"LineString",coordinates:f.pts.map(function(p){var ll=u2l(p[0],p[1]);return[ll[1],ll[0]];})},properties:{e:f.e}};})},{style:function(f){return{color:f.properties.e>100?"#cc8800":"#886633",weight:.8,opacity:.55};}}).addTo(LM);
 }
 function SV(v){CV=v;document.getElementById("v3").style.display=v==="3d"?"block":"none";document.getElementById("v2").style.display=v==="2d"?"block":"none";document.getElementById("nav").style.display=v==="3d"?"flex":"none";document.getElementById("s3d").style.display=v==="3d"?"block":"none";document.getElementById("b3d").classList.toggle("on",v==="3d");document.getElementById("b2d").classList.toggle("on",v==="2d");if(v==="2d")OL();}
-function SL(k,btn){CK=k;document.querySelectorAll(".lb").forEach(function(b){b.classList.remove("on");});btn.classList.add("on");BT(k,parseFloat(document.getElementById("vs").value));if(CV==="2d"&&LM&&LO){var SW=u2l(UW,US),NE=u2l(UE,UN2);LM.removeLayer(LO);LM.removeLayer(LO);LO=L.imageOverlay(LINFO[k].f+'?nc='+Date.now(),[SW,NE],{opacity:parseFloat(document.getElementById('ov2dOp').value)||1.0,interactive:false}).addTo(LM);}}
+function SL(k,btn){CK=k;document.querySelectorAll(".lb").forEach(function(b){b.classList.remove("on");});btn.classList.add("on");BT(k,parseFloat(document.getElementById("vs").value));if(CV==="2d"&&LM&&LO){var SW=u2l(UW,US),NE=u2l(UE,UN2);LM.removeLayer(LO);LO=L.imageOverlay(LINFO[k].f,[SW,NE],{opacity:parseFloat(document.getElementById('ov2dOp').value)||1.0,interactive:false}).addTo(LM);}}
 function S2O(v){var pct=Math.round(parseFloat(v)*100);document.getElementById("ov2dOpVal").textContent=pct+"%";if(window.LO)window.LO.setOpacity(parseFloat(v));}
 function SBM(v){BM=v;document.querySelectorAll(".bo").forEach(function(el){el.classList.toggle("sel",el.querySelector("input").value===v);});if(!LM)return;if(LOSM&&LM.hasLayer(LOSM))LM.removeLayer(LOSM);if(LSAT&&LM.hasLayer(LSAT))LM.removeLayer(LSAT);if(v==="osm")LOSM.addTo(LM);else if(v==="sat")LSAT.addTo(LM);}
 function TZA(on){if(ZL)ZL.visible=on;if(LM&&LZA){if(on)LZA.addTo(LM);else LM.removeLayer(LZA);}}
